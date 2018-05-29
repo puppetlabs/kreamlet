@@ -1,0 +1,41 @@
+FROM golang:1.10.0-stretch
+
+COPY $CWD/hack/entrypoint.sh /
+
+RUN apt-get update -y \ 
+    && apt-get install -y btrfs-tools \
+                       ca-certificates \
+                       git \
+		       wget \ 
+                       tar \ 
+                       bash \ 
+                       vim \
+                       libapparmor-dev \
+                       libseccomp-dev  \
+    && rm -rf /var/lib/apt/lists/* \
+    && chmod +x /entrypoint.sh \
+    && wget https://github.com/containerd/containerd/releases/download/v1.0.2/containerd-1.0.2.linux-amd64.tar.gz \
+    && tar -C / -xzf containerd-1.0.2.linux-amd64.tar.gz \
+    && rm -rf containerd-1.0.1.linux-amd64.tar.gz \
+    && go get github.com/opencontainers/runc \
+    && go get github.com/containerd/containerd \
+    #&& mkdir -p /etc/kubernetes \
+    #&& ln -s /etc/kubernetes /var/lib/kubeadm \
+    #&& ln -s  /usr/libexec/kubernetes/kubelet-plugins /var/lib/kubelet-plugins \
+    && mkdir -p /etc/kubeadm \
+    && mkdir -p /etc/cni/net.d \ 
+    && mkdir -p /opt/cni/bin \
+    && echo -e "net.ipv4.ip_forward = 1">>/etc/sysctl.d/01-kubernetes.conf 
+
+WORKDIR /go/src/github.com/opencontainers/runc
+
+RUN git checkout a618ab5a0186905949ee463dbb762c3d23e12a80 \ 
+    && make BUILDTAGS='seccomp apparmor' && make install 
+
+WORKDIR /go/src/github.com/scotty-c/bootstrap
+COPY . .
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD []
+

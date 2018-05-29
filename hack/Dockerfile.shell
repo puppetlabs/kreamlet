@@ -1,0 +1,23 @@
+FROM golang:1.9.4-stretch
+
+RUN apt-get update -y \ 
+    && apt-get install ca-certificates wget tar bash vim libapparmor-dev libseccomp-dev -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && wget https://github.com/containerd/containerd/releases/download/v1.0.1/containerd-1.0.1.linux-amd64.tar.gz \
+    && tar -C / -xzf containerd-1.0.1.linux-amd64.tar.gz \
+    && rm -rf containerd-1.0.1.linux-amd64.tar.gz \
+    && wget https://github.com/moby/buildkit/releases/download/preview1/buildkit.preview1.linux.amd64.tar.gz \
+    && tar -C /bin/ -xzf buildkit.preview1.linux.amd64.tar.gz \
+    && rm -rf buildkit.preview1.linux.amd64.tar.gz     
+
+COPY $CWD/hack/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+WORKDIR /go/src/github.com/puppetlabs/kreamlet
+COPY . .
+
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD []
+
