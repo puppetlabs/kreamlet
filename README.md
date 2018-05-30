@@ -10,7 +10,7 @@ Golang 1.9.4
 ## Getting it up and running 
 
 
-Firstly you need to get the code with `go get -u github.com/scotty-c/kream-v2`
+Firstly you need to get the code with `go get -u github.com/puppetlabs/kreamlet`
 
 Then just run `./setup.sh`
 
