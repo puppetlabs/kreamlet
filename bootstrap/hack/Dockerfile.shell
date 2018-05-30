@@ -19,9 +19,6 @@ RUN apt-get update -y \
     && rm -rf containerd-1.0.1.linux-amd64.tar.gz \
     && go get github.com/opencontainers/runc \
     && go get github.com/containerd/containerd \
-    #&& mkdir -p /etc/kubernetes \
-    #&& ln -s /etc/kubernetes /var/lib/kubeadm \
-    #&& ln -s  /usr/libexec/kubernetes/kubelet-plugins /var/lib/kubelet-plugins \
     && mkdir -p /etc/kubeadm \
     && mkdir -p /etc/cni/net.d \ 
     && mkdir -p /opt/cni/bin \
