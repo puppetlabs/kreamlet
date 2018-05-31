@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/puppetlabs/kreamlet/client"
-	//	"github.com/scotty-c/kream-v2/logging"
 	"github.com/spf13/cobra"
 )
 
