@@ -1,6 +1,23 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package metadata
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -329,7 +346,10 @@ func sendSnapshotRefs(ns string, bkt *bolt.Bucket, fn func(gc.Node)) error {
 		lc := lbkt.Cursor()
 
 		for k, v := lc.Seek(labelGCSnapRef); k != nil && strings.HasPrefix(string(k), string(labelGCSnapRef)); k, v = lc.Next() {
-			snapshotter := string(k[len(labelGCSnapRef):])
+			snapshotter := k[len(labelGCSnapRef):]
+			if i := bytes.IndexByte(snapshotter, '/'); i >= 0 {
+				snapshotter = snapshotter[:i]
+			}
 			fn(gcnode(ResourceSnapshot, ns, fmt.Sprintf("%s/%s", snapshotter, v)))
 		}
 	}
@@ -345,8 +365,8 @@ func sendContentRefs(ns string, bkt *bolt.Bucket, fn func(gc.Node)) error {
 		labelRef := string(labelGCContentRef)
 		for k, v := lc.Seek(labelGCContentRef); k != nil && strings.HasPrefix(string(k), labelRef); k, v = lc.Next() {
 			if ks := string(k); ks != labelRef {
-				// Allow reference naming, ignore names
-				if ks[len(labelRef)] != '.' {
+				// Allow reference naming separated by . or /, ignore names
+				if ks[len(labelRef)] != '.' && ks[len(labelRef)] != '/' {
 					continue
 				}
 			}

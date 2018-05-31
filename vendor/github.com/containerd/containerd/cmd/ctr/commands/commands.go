@@ -1,9 +1,26 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package commands
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/containerd/containerd"
@@ -82,4 +99,23 @@ func PrintAsJSON(x interface{}) {
 		fmt.Fprintf(os.Stderr, "can't marshal %+v as a JSON string: %v\n", x, err)
 	}
 	fmt.Println(string(b))
+}
+
+// WritePidFile writes the pid atomically to a file
+func WritePidFile(path string, pid int) error {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	tempPath := filepath.Join(filepath.Dir(path), fmt.Sprintf(".%s", filepath.Base(path)))
+	f, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_EXCL|os.O_SYNC, 0666)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(f, "%d", pid)
+	f.Close()
+	if err != nil {
+		return err
+	}
+	return os.Rename(tempPath, path)
 }

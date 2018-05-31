@@ -1,5 +1,21 @@
 // +build windows
 
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package windows
 
 import (
@@ -11,6 +27,7 @@ import (
 	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/events"
+	"github.com/containerd/containerd/mount"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/windows/hcsshimtypes"
 	"github.com/containerd/typeurl"
@@ -33,11 +50,11 @@ type task struct {
 
 	publisher events.Publisher
 	rwLayer   string
+	rootfs    []mount.Mount
 
 	pidPool           *pidPool
 	hcsContainer      hcsshim.Container
 	terminateDuration time.Duration
-	servicing         bool
 }
 
 func (t *task) ID() string {
@@ -406,6 +423,5 @@ func (t *task) cleanup() {
 	for _, p := range t.processes {
 		t.removeProcessNL(p.id)
 	}
-	removeLayer(context.Background(), t.rwLayer)
 	t.Unlock()
 }

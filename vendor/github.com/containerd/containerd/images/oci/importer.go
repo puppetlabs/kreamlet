@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 // Package oci provides the importer and the exporter for OCI Image Spec.
 package oci
 
@@ -113,7 +129,7 @@ func normalizeImageRef(imageName string, manifest ocispec.Descriptor) (string, e
 	return imageName + ":" + ociRef, nil
 }
 
-func onUntarBlob(ctx context.Context, r io.Reader, store content.Store, name string, size int64) error {
+func onUntarBlob(ctx context.Context, r io.Reader, store content.Ingester, name string, size int64) error {
 	// name is like "blobs/sha256/deadbeef"
 	split := strings.Split(name, "/")
 	if len(split) != 3 {
