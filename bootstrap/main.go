@@ -40,11 +40,16 @@ func kubelet() error {
 		return err
 	}
 
-	// create a task from the container
-	task, err := container.Task(ctx, cio.NewAttach())
+	spec, err := container.Spec(ctx)
 	if err != nil {
 		return err
 	}
+
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		return err
+	}
+
 	defer task.Delete(ctx)
 
 	exitStatusC, err := task.Wait(ctx)
@@ -52,7 +57,7 @@ func kubelet() error {
 		fmt.Println(err)
 	}
 
-	if err := task.Exec(ctx, command, cio.NewCreator(cio.WithStdio)); err != nil {
+	if err := task.Exec(ctx, command, spec.Process, cio.NewCreator(cio.WithStdio)); err != nil {
 		return err
 	}
 
