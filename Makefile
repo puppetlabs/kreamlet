@@ -23,8 +23,8 @@ binary: build-dirs
 	if [ ! -d $$PWD/tmp/ ]; then mkdir $$PWD/tmp/; fi
 	docker build -t ${DOCKER_IMAGE} -f ${ROOT_DIR}/hack/Dockerfile.build .
 	docker run --name kream-build ${DOCKER_IMAGE}
-	docker cp kream-build:/go/src/github.com/scotty-c/kream-v2/bin/kream $$PWD/tmp/
-	docker cp kream-build:/go/src/github.com/scotty-c/kream-v2/bin/kream-darwin $$PWD/tmp/
+	docker cp kream-build:/go/src/github.com/puppetlabs/kreamlet/bin/kream $$PWD/tmp/
+	docker cp kream-build:/go/src/github.com/puppetlabs/kreamlet/bin/kream-darwin $$PWD/tmp/
 	docker rm kream-build
 	cp -rf $$PWD/tmp/* $$PWD/bin && rm -rf $$PWD/tmp/
 
