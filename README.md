@@ -2,15 +2,20 @@
 
 ### Install dependencies
 ```
+Linux:
 docker-ce
-Golang 1.9.4
+golang 1.10.2
+
+MacOS:
+vagrant 
+golang 1.10.2
 
 ```
 
 ## Getting it up and running 
 
 
-Firstly you need to get the code with `go get -u github.com/puppetlabs/kreamlet`
+Firstly you need to get the code with `go get github.com/puppetlabs/kreamlet`
 
 Then just run `./setup.sh`
 
