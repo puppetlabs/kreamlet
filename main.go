@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/scotty-c/kream-v2/cmd"
+	"github.com/puppetlabs/kreamlet/cmd"
 )
 
 func main() {
