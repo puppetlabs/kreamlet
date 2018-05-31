@@ -1,0 +1,9 @@
+--- 
+- 
+  box: scotty-c/kreamlet
+  cpu: 2
+  ip: "172.17.8.101"
+  name: kreamlet
+  forward_ports: []
+  ram: 2048
+  shell_commands: [] 

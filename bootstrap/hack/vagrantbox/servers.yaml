@@ -1,0 +1,18 @@
+--- 
+- 
+  box: bento/ubuntu-16.04
+  cpu: 2
+  ip: "172.17.8.101"
+  name: kreamlet
+  forward_ports: []
+  ram: 2048
+  shell_commands: 
+      - { shell: 'apt-get update && apt-get install pkg-config git apt-transport-https ca-certificates curl software-properties-common libapparmor-dev libseccomp-dev vim -y'}
+      - { shell: 'wget https://dl.google.com/go/go1.10.2.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.10.2.linux-amd64.tar.gz'}
+      - { shell: 'echo -e "export GOROOT=/usr/local/go\nexport PATH=$PATH:$GOROOT/bin\nexport GOPATH=/vagrant\nexport PATH=/usr/local/go/bin:$PATH">>/etc/profile.d/golang.sh'}  
+      - { shell: 'wget https://github.com/containerd/containerd/releases/download/v1.0.2/containerd-1.0.2.linux-amd64.tar.gz' }
+      - { shell: 'tar -C / -xzf containerd-1.0.2.linux-amd64.tar.gz && rm -rf containerd-1.0.1.linux-amd64.tar.gz'} 
+      - { shell: 'go get github.com/opencontainers/runc || true && go get github.com/containerd/containerd'} 
+      - { shell: 'cd $GOPATH/src/github.com/opencontainers/runc && git checkout a618ab5a0186905949ee463dbb762c3d23e12a80 && make BUILDTAGS="seccomp apparmor" && make install'}
+      - { shell: 'mkdir -p /etc/kubeadm && mkdir -p /etc/cni/net.d && mkdir -p /opt/cni/bin'}
+      - { shell: 'echo -e "net.ipv4.ip_forward = 1">>/etc/sysctl.d/01-kubernetes.conf'}
