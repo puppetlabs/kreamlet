@@ -1,8 +1,23 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package filters
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 )
 
@@ -260,7 +275,6 @@ func TestScanner(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			var sc scanner
 			sc.init(testcase.input)
-			t.Logf("scan %q", testcase.input)
 
 			// If you leave the expected empty, the test case will just print
 			// out the token stream, which you can paste into the testcase when
@@ -271,7 +285,6 @@ func TestScanner(t *testing.T) {
 
 			for i := 0; ; i++ {
 				pos, tok, s := sc.scan()
-				t.Log("token", pos, tok, strconv.Quote(s))
 				if len(testcase.expected) == 0 {
 					if len(s) > 0 {
 						fmt.Printf("{pos: %v, token: %#v, text: %q},\n", pos, tok, s)

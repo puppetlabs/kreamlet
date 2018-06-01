@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package scheduler
 
 import (
@@ -6,7 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerd/containerd/metadata"
+	"github.com/containerd/containerd/gc"
+	"github.com/gotestyourself/gotestyourself/assert"
 )
 
 func TestPauseThreshold(t *testing.T) {
@@ -39,8 +56,9 @@ func TestPauseThreshold(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond * 15)
-	if c := tc.runCount(); c < 3 || c > 4 {
-		t.Fatalf("unexpected gc run count %d, expected between 5 and 6", c)
+
+	if c := tc.runCount(); c > 4 {
+		t.Fatalf("unexpected gc run count %d, expected less than 5", c)
 	}
 }
 
@@ -97,7 +115,7 @@ func TestTrigger(t *testing.T) {
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		scheduler   = newScheduler(tc, cfg)
-		stats       metadata.GCStats
+		stats       gc.Stats
 		err         error
 	)
 
@@ -121,9 +139,7 @@ func TestTrigger(t *testing.T) {
 		t.Fatalf("GC failed: %#v", err)
 	}
 
-	if stats.MetaD != tc.d {
-		t.Fatalf("unexpected gc duration: %s, expected %d", stats.MetaD, tc.d)
-	}
+	assert.Equal(t, tc.d, stats.Elapsed())
 
 	if c := tc.runCount(); c != 1 {
 		t.Fatalf("unexpected gc run count %d, expected 1", c)
@@ -178,11 +194,18 @@ func (tc *testCollector) RegisterMutationCallback(f func(bool)) {
 	tc.callbacks = append(tc.callbacks, f)
 }
 
-func (tc *testCollector) GarbageCollect(context.Context) (metadata.GCStats, error) {
+func (tc *testCollector) GarbageCollect(context.Context) (gc.Stats, error) {
 	tc.m.Lock()
 	tc.gc++
 	tc.m.Unlock()
-	return metadata.GCStats{
-		MetaD: tc.d,
-	}, nil
+	return gcStats{elapsed: tc.d}, nil
+}
+
+type gcStats struct {
+	elapsed time.Duration
+}
+
+// Elapsed returns the duration which elapsed during a collection
+func (s gcStats) Elapsed() time.Duration {
+	return s.elapsed
 }

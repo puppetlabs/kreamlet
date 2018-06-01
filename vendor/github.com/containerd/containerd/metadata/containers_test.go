@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package metadata
 
 import (
@@ -23,7 +39,7 @@ import (
 )
 
 func init() {
-	typeurl.Register(&specs.Spec{}, "types.contianerd.io/opencontainers/runtime-spec", "v1", "Spec")
+	typeurl.Register(&specs.Spec{}, "types.containerd.io/opencontainers/runtime-spec", "v1", "Spec")
 }
 
 func TestContainersList(t *testing.T) {
@@ -248,29 +264,6 @@ func TestContainersCreateUpdateDelete(t *testing.T) {
 			cause:      errdefs.ErrInvalidArgument,
 		},
 		{
-			name: "UpdateFail",
-			original: containers.Container{
-				Spec:        encoded,
-				SnapshotKey: "test-snapshot-key",
-				Snapshotter: "snapshotter",
-
-				Runtime: containers.RuntimeInfo{
-					Name: "testruntime",
-				},
-				Image: "test image",
-			},
-			input: containers.Container{
-				Spec: encoded,
-				Runtime: containers.RuntimeInfo{
-					Name: "testruntime",
-				},
-				SnapshotKey: "test-snapshot-key",
-				Snapshotter: "snapshotter",
-				// try to clear image field
-			},
-			cause: errdefs.ErrInvalidArgument,
-		},
-		{
 			name: "UpdateSpec",
 			original: containers.Container{
 				Spec:        encoded,
@@ -293,6 +286,60 @@ func TestContainersCreateUpdateDelete(t *testing.T) {
 				SnapshotKey: "test-snapshot-key",
 				Snapshotter: "snapshotter",
 				Image:       "test image",
+			},
+		},
+		{
+			name: "UpdateSnapshot",
+			original: containers.Container{
+
+				Spec:        encoded,
+				SnapshotKey: "test-snapshot-key",
+				Snapshotter: "snapshotter",
+				Runtime: containers.RuntimeInfo{
+					Name: "testruntime",
+				},
+				Image: "test image",
+			},
+			input: containers.Container{
+				SnapshotKey: "test2-snapshot-key",
+			},
+			fieldpaths: []string{"snapshotkey"},
+			expected: containers.Container{
+
+				Spec:        encoded,
+				SnapshotKey: "test2-snapshot-key",
+				Snapshotter: "snapshotter",
+				Runtime: containers.RuntimeInfo{
+					Name: "testruntime",
+				},
+				Image: "test image",
+			},
+		},
+		{
+			name: "UpdateImage",
+			original: containers.Container{
+
+				Spec:        encoded,
+				SnapshotKey: "test-snapshot-key",
+				Snapshotter: "snapshotter",
+				Runtime: containers.RuntimeInfo{
+					Name: "testruntime",
+				},
+				Image: "test image",
+			},
+			input: containers.Container{
+				Image: "test2 image",
+			},
+			fieldpaths: []string{"image"},
+			expected: containers.Container{
+
+				Spec:        encoded,
+				SnapshotKey: "test-snapshot-key",
+				Snapshotter: "snapshotter",
+				Runtime: containers.RuntimeInfo{
+					Name: "testruntime",
+				},
+				Image: "test2 image",
 			},
 		},
 		{
