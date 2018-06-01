@@ -57,15 +57,22 @@ func kubelet() error {
 		fmt.Println(err)
 	}
 
-	if err := task.Exec(ctx, command, spec.Process, cio.NewCreator(cio.WithStdio)); err != nil {
+	if _, err := task.Exec(ctx, command, spec.Process, cio.NewCreator(cio.WithStdio)); err != nil {
+		return err
+	}
+
+	// start the task
+	if err := task.Start(ctx); err != nil {
+		task.Delete(ctx)
 		return err
 	}
 
 	status := <-exitStatusC
-	code, _, err := status.Result()
+	_, _, err = status.Result()
 	if err != nil {
 		return err
 	}
 
 	return nil
+
 }
