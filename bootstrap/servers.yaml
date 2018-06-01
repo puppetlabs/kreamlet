@@ -6,4 +6,5 @@
   name: kreamlet
   forward_ports: []
   ram: 2048
-  shell_commands: [] 
+  shell_commands: 
+    - {shell: 'mkdir -p /go/src/github.com/puppetlabs || true && ln -s /vagrant /go/src/github.com/puppetlabs/kreamlet'} 
