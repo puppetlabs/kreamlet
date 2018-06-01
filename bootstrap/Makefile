@@ -26,6 +26,7 @@ ifeq ($(OS_TYPE), linux)
 	docker run -it --rm --privileged -v $(TMP_DIR):/var/lib/containerd ${DOCKER_IMAGE}-shell /bin/bash || true
 	sudo rm -rf $(TMP_DIR)  	
 else
+	cp -rf ../vendor/ src/
 	vagrant up
 	vagrant ssh 	
 endif
