@@ -56,6 +56,7 @@ func init() {
 // New returns a new containerd client that is connected to the containerd
 // instance provided by address
 func New(address string, opts ...ClientOpt) (*Client, error) {
+	address = fmt.Sprintf("passthrough:///%v", address)
 	var copts clientOpts
 	for _, o := range opts {
 		if err := o(&copts); err != nil {

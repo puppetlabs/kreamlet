@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/namespaces"
-	"log"
 )
 
 func main() {
@@ -56,8 +59,10 @@ func kubelet() error {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	if _, err := task.Exec(ctx, command, spec.Process, cio.NewCreator(cio.WithStdio)); err != nil {
+	reader := bufio.NewReader(os.Stdin)
+	writer := bufio.NewWriter(os.Stdout)
+	creation := cio.NewIO(reader, os.Stdout, writer)
+	if _, err := task.Exec(ctx, command, spec.Process, creation); err != nil {
 		return err
 	}
 
