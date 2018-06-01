@@ -12,7 +12,7 @@ To get this development environment going run `make shell` below we will explain
 Make shell will give you a shell in the $GOPATH from there you can test out your code.
 
 ### MacOS
-Make shell will land you at `vagrant@kreamlet` so you need to `sudo -i` then `cd /vagrant`. This will then have you in the $GOPATH. You can test your code from there.
+Make shell will land you at `vagrant@kreamlet` so you need to `sudo -i` then `cd /go/src/github.com/puppetlabs/kreamlet`. This is symlinked to your local directory. You can test your code from there.
 
 
 
