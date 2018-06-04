@@ -29,7 +29,7 @@ WORKDIR /go/src/github.com/opencontainers/runc
 RUN git checkout a618ab5a0186905949ee463dbb762c3d23e12a80 \ 
     && make BUILDTAGS='seccomp apparmor' && make install 
 
-WORKDIR /go/src/github.com/scotty-c/bootstrap
+WORKDIR /go/src/github.com/puppetlabs/bootstrap
 COPY . .
 
 ENTRYPOINT ["/entrypoint.sh"]
