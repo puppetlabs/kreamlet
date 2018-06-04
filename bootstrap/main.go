@@ -19,8 +19,9 @@ func main() {
 func kubelet() error {
 
 	var namespace = "services.linuxkit"
-	var id = "kublet"
-	var command = "kubeadm-init.sh"
+	var id = "kube"
+	var kube = "kubelet"
+	//var command = "kubeadm-init.sh"
 
 	// create a new client connected to the default socket path for containerd
 	client, err := containerd.New("/run/containerd/containerd.sock")
@@ -34,7 +35,7 @@ func kubelet() error {
 	//connect to kubelet container
 	container, err := client.LoadContainer(
 		ctx,
-		id,
+		kube,
 	)
 	if err != nil {
 		return err
@@ -58,7 +59,7 @@ func kubelet() error {
 	}
 
 	pspec := spec.Process
-	pspec.Args = command
+	//pspec.Args = command
 
 	process, err := task.Exec(ctx, id, pspec, cio.NewCreator(cio.WithStdio))
 	if err != nil {
