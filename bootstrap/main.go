@@ -33,7 +33,7 @@ func kubelet() error {
 	defer client.Close()
 
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
-
+	fmt.Println("loading kube container")
 	//connect to kubelet container
 	container, err := client.LoadContainer(
 		ctx,
@@ -43,11 +43,13 @@ func kubelet() error {
 		return err
 	}
 
+	fmt.Println("getting OCI runtime spec")
 	spec, err := container.Spec(ctx)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("creating container task")
 	task, err := container.Task(ctx, nil)
 	if err != nil {
 		return err
@@ -55,19 +57,24 @@ func kubelet() error {
 
 	defer task.Delete(ctx)
 
+	fmt.Println("collecting result")
 	exitStatusC, err := task.Wait(ctx)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	pspec := spec.Process
+	pspec.Args = []string{command}
 	reader := bufio.NewReader(os.Stdin)
 	writer := bufio.NewWriter(os.Stdout)
 	creation := cio.NewIO(reader, os.Stdout, writer)
-	if _, err := task.Exec(ctx, command, spec.Process, creation); err != nil {
+	process, err := task.Exec(ctx, command, pspec, creation)
+	if err != nil {
 		return err
 	}
 
 	// start the task
-	if err := task.Start(ctx); err != nil {
+	if err := process.Start(ctx); err != nil {
 		task.Delete(ctx)
 		return err
 	}
