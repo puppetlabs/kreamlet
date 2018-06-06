@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package oci
 
 import (
@@ -25,7 +41,7 @@ type V1Exporter struct {
 }
 
 // Export implements Exporter.
-func (oe *V1Exporter) Export(ctx context.Context, store content.Store, desc ocispec.Descriptor, writer io.Writer) error {
+func (oe *V1Exporter) Export(ctx context.Context, store content.Provider, desc ocispec.Descriptor, writer io.Writer) error {
 	tw := tar.NewWriter(writer)
 	defer tw.Close()
 
@@ -42,7 +58,7 @@ func (oe *V1Exporter) Export(ctx context.Context, store content.Store, desc ocis
 	}
 
 	handlers := images.Handlers(
-		images.ChildrenHandler(store, platforms.Default()),
+		images.FilterPlatforms(images.ChildrenHandler(store), platforms.Default()),
 		images.HandlerFunc(exportHandler),
 	)
 
@@ -67,7 +83,7 @@ type tarRecord struct {
 	CopyTo func(context.Context, io.Writer) (int64, error)
 }
 
-func blobRecord(cs content.Store, desc ocispec.Descriptor) tarRecord {
+func blobRecord(cs content.Provider, desc ocispec.Descriptor) tarRecord {
 	path := "blobs/" + desc.Digest.Algorithm().String() + "/" + desc.Digest.Hex()
 	return tarRecord{
 		Header: &tar.Header{

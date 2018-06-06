@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package metadata
 
 import (
@@ -8,18 +24,18 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"github.com/containerd/containerd/pkg/testutil"
 	"github.com/containerd/containerd/snapshots"
-	"github.com/containerd/containerd/snapshots/naive"
+	"github.com/containerd/containerd/snapshots/native"
 	"github.com/containerd/containerd/snapshots/testsuite"
-	"github.com/containerd/containerd/testutil"
 )
 
 func newTestSnapshotter(ctx context.Context, root string) (snapshots.Snapshotter, func() error, error) {
-	naiveRoot := filepath.Join(root, "naive")
-	if err := os.Mkdir(naiveRoot, 0770); err != nil {
+	nativeRoot := filepath.Join(root, "native")
+	if err := os.Mkdir(nativeRoot, 0770); err != nil {
 		return nil, nil, err
 	}
-	snapshotter, err := naive.NewSnapshotter(naiveRoot)
+	snapshotter, err := native.NewSnapshotter(nativeRoot)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -29,7 +45,7 @@ func newTestSnapshotter(ctx context.Context, root string) (snapshots.Snapshotter
 		return nil, nil, err
 	}
 
-	sn := NewDB(db, nil, map[string]snapshots.Snapshotter{"naive": snapshotter}).Snapshotter("naive")
+	sn := NewDB(db, nil, map[string]snapshots.Snapshotter{"native": snapshotter}).Snapshotter("native")
 
 	return sn, func() error {
 		if err := sn.Close(); err != nil {
