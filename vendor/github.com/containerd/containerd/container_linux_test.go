@@ -1,5 +1,21 @@
 // +build linux
 
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package containerd
 
 import (
@@ -19,8 +35,8 @@ import (
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/errdefs"
-	"github.com/containerd/containerd/linux/runctypes"
 	"github.com/containerd/containerd/oci"
+	"github.com/containerd/containerd/runtime/linux/runctypes"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -43,8 +59,7 @@ func TestTaskUpdate(t *testing.T) {
 
 	image, err := client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	limit := int64(32 * 1024 * 1024)
 	memory := func(_ context.Context, _ oci.Client, _ *containers.Container, s *specs.Spec) error {
@@ -57,38 +72,32 @@ func TestTaskUpdate(t *testing.T) {
 		WithNewSpec(oci.WithImageConfig(image), withProcessArgs("sleep", "30"), memory),
 		WithNewSnapshot(id, image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	task, err := container.NewTask(ctx, empty())
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// check that the task has a limit of 32mb
 	cgroup, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(task.Pid())))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	stat, err := cgroup.Stat(cgroups.IgnoreNotExist)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if int64(stat.Memory.Usage.Limit) != limit {
-		t.Errorf("expected memory limit to be set to %d but received %d", limit, stat.Memory.Usage.Limit)
-		return
+		t.Fatalf("expected memory limit to be set to %d but received %d", limit, stat.Memory.Usage.Limit)
 	}
 	limit = 64 * 1024 * 1024
 	if err := task.Update(ctx, WithResources(&specs.LinuxResources{
@@ -100,15 +109,13 @@ func TestTaskUpdate(t *testing.T) {
 	}
 	// check that the task has a limit of 64mb
 	if stat, err = cgroup.Stat(cgroups.IgnoreNotExist); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if int64(stat.Memory.Usage.Limit) != limit {
 		t.Errorf("expected memory limit to be set to %d but received %d", limit, stat.Memory.Usage.Limit)
 	}
 	if err := task.Kill(ctx, unix.SIGKILL); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	<-statusC
@@ -131,21 +138,18 @@ func TestShimInCgroup(t *testing.T) {
 
 	image, err := client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), oci.WithProcessArgs("sleep", "30")), WithNewSnapshot(id, image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 	// create a cgroup for the shim to use
 	path := "/containerd/shim"
 	cg, err := cgroups.New(cgroups.V1, cgroups.StaticPath(path), &specs.LinuxResources{})
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer cg.Delete()
 
@@ -156,29 +160,25 @@ func TestShimInCgroup(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// check to see if the shim is inside the cgroup
 	processes, err := cg.Processes(cgroups.Devices, false)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if len(processes) == 0 {
 		t.Errorf("created cgroup should have atleast one process inside: %d", len(processes))
 	}
 	if err := task.Kill(ctx, unix.SIGKILL); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	<-statusC
@@ -200,33 +200,28 @@ func TestDaemonRestart(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	container, err := client.NewContainer(ctx, id, WithNewSpec(withImageConfig(image), withProcessArgs("sleep", "30")), withNewSnapshot(id, image))
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), withProcessArgs("sleep", "30")), WithNewSnapshot(id, image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	task, err := container.NewTask(ctx, empty())
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	var exitStatus ExitStatus
@@ -249,8 +244,7 @@ func TestDaemonRestart(t *testing.T) {
 
 	statusC, err = task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Kill(ctx, syscall.SIGKILL); err != nil {
@@ -258,6 +252,76 @@ func TestDaemonRestart(t *testing.T) {
 	}
 
 	<-statusC
+}
+
+func TestContainerPTY(t *testing.T) {
+	t.Parallel()
+
+	client, err := newClient(t, address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	var (
+		image       Image
+		ctx, cancel = testContext()
+		id          = t.Name()
+	)
+	defer cancel()
+
+	image, err = client.GetImage(ctx, testImage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), oci.WithTTY, withProcessArgs("echo", "hello")), WithNewSnapshot(id, image))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Delete(ctx, WithSnapshotCleanup)
+
+	direct, err := newDirectIOWithTerminal(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer direct.Delete()
+	var (
+		wg  sync.WaitGroup
+		buf = bytes.NewBuffer(nil)
+	)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(buf, direct.Stdout)
+	}()
+
+	task, err := container.NewTask(ctx, direct.IOCreate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer task.Delete(ctx)
+
+	status, err := task.Wait(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := task.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	<-status
+	wg.Wait()
+
+	if err := direct.Close(); err != nil {
+		t.Error(err)
+	}
+
+	out := buf.String()
+	if !strings.ContainsAny(fmt.Sprintf("%#q", out), `\x00`) {
+		t.Fatal(`expected \x00 in output`)
+	}
 }
 
 func TestContainerAttach(t *testing.T) {
@@ -285,23 +349,20 @@ func TestContainerAttach(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	container, err := client.NewContainer(ctx, id, WithNewSpec(withImageConfig(image), withCat()), withNewSnapshot(id, image))
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), withCat()), WithNewSnapshot(id, image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	expected := "hello" + newLine
 
-	direct, err := cio.NewDirectIO(ctx, false)
+	direct, err := newDirectIOStandard(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer direct.Delete()
 	var (
@@ -316,8 +377,7 @@ func TestContainerAttach(t *testing.T) {
 
 	task, err := container.NewTask(ctx, direct.IOCreate)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
@@ -327,8 +387,7 @@ func TestContainerAttach(t *testing.T) {
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if _, err := fmt.Fprint(direct.Stdin, expected); err != nil {
@@ -337,13 +396,11 @@ func TestContainerAttach(t *testing.T) {
 
 	// load the container and re-load the task
 	if container, err = client.LoadContainer(ctx, id); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if task, err = container.Task(ctx, direct.IOAttach); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if _, err := fmt.Fprint(direct.Stdin, expected); err != nil {
@@ -372,6 +429,65 @@ func TestContainerAttach(t *testing.T) {
 	}
 }
 
+func newDirectIOStandard(ctx context.Context) (*directIO, error) {
+	return newDirectIO(ctx, false)
+}
+
+func newDirectIOWithTerminal(ctx context.Context) (*directIO, error) {
+	return newDirectIO(ctx, true)
+}
+
+func newDirectIO(ctx context.Context, terminal bool) (*directIO, error) {
+	fifos, err := cio.NewFIFOSetInDir("", "", false)
+	if err != nil {
+		return nil, err
+	}
+	f := cio.NewDirectIO
+	if terminal {
+		f = cio.NewDirectIOWithTerminal
+	}
+	dio, err := f(ctx, fifos)
+	if err != nil {
+		return nil, err
+	}
+	return &directIO{DirectIO: *dio}, nil
+}
+
+type directIO struct {
+	cio.DirectIO
+}
+
+// ioCreate returns IO available for use with task creation
+func (f *directIO) IOCreate(id string) (cio.IO, error) {
+	return f, nil
+}
+
+// ioAttach returns IO available for use with task attachment
+func (f *directIO) IOAttach(set *cio.FIFOSet) (cio.IO, error) {
+	return f, nil
+}
+
+func (f *directIO) Cancel() {
+	// nothing to cancel as all operations are handled externally
+}
+
+// Close closes all open fds
+func (f *directIO) Close() error {
+	err := f.Stdin.Close()
+	if err2 := f.Stdout.Close(); err == nil {
+		err = err2
+	}
+	if err2 := f.Stderr.Close(); err == nil {
+		err = err2
+	}
+	return err
+}
+
+// Delete removes the underlying directory containing fifos
+func (f *directIO) Delete() error {
+	return f.DirectIO.Close()
+}
+
 func TestContainerUsername(t *testing.T) {
 	t.Parallel()
 
@@ -390,13 +506,11 @@ func TestContainerUsername(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	direct, err := cio.NewDirectIO(ctx, false)
+	direct, err := newDirectIOStandard(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer direct.Delete()
 	var (
@@ -411,31 +525,27 @@ func TestContainerUsername(t *testing.T) {
 
 	// squid user in the alpine image has a uid of 31
 	container, err := client.NewContainer(ctx, id,
-		withNewSnapshot(id, image),
-		WithNewSpec(withImageConfig(image), oci.WithUsername("squid"), oci.WithProcessArgs("id", "-u")),
+		WithNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image), oci.WithUsername("squid"), oci.WithProcessArgs("id", "-u")),
 	)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	task, err := container.NewTask(ctx, direct.IOCreate)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	<-statusC
 
@@ -444,6 +554,80 @@ func TestContainerUsername(t *testing.T) {
 	output := strings.TrimSuffix(buf.String(), "\n")
 	if output != "31" {
 		t.Errorf("expected squid uid to be 31 but received %q", output)
+	}
+}
+
+func TestContainerUser(t *testing.T) {
+	t.Parallel()
+	t.Run("UserNameAndGroupName", func(t *testing.T) { testContainerUser(t, "squid:squid", "31:31") })
+	t.Run("UserIDAndGroupName", func(t *testing.T) { testContainerUser(t, "1001:squid", "1001:31") })
+	t.Run("UserNameAndGroupID", func(t *testing.T) { testContainerUser(t, "squid:1002", "31:1002") })
+	t.Run("UserIDAndGroupID", func(t *testing.T) { testContainerUser(t, "1001:1002", "1001:1002") })
+}
+
+func testContainerUser(t *testing.T, userstr, expectedOutput string) {
+	client, err := newClient(t, address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	var (
+		image       Image
+		ctx, cancel = testContext()
+		id          = strings.Replace(t.Name(), "/", "_", -1)
+	)
+	defer cancel()
+
+	image, err = client.GetImage(ctx, testImage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	direct, err := newDirectIOStandard(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer direct.Delete()
+	var (
+		wg  sync.WaitGroup
+		buf = bytes.NewBuffer(nil)
+	)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(buf, direct.Stdout)
+	}()
+
+	container, err := client.NewContainer(ctx, id,
+		WithNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image), oci.WithUser(userstr), oci.WithProcessArgs("sh", "-c", "echo $(id -u):$(id -g)")),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Delete(ctx, WithSnapshotCleanup)
+
+	task, err := container.NewTask(ctx, direct.IOCreate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer task.Delete(ctx)
+
+	statusC, err := task.Wait(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := task.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	<-statusC
+
+	wg.Wait()
+
+	output := strings.TrimSuffix(buf.String(), "\n")
+	if output != expectedOutput {
+		t.Errorf("expected uid:gid to be %q, but received %q", expectedOutput, output)
 	}
 }
 
@@ -472,24 +656,21 @@ func TestContainerAttachProcess(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	container, err := client.NewContainer(ctx, id, WithNewSpec(withImageConfig(image), withProcessArgs("sleep", "100")), withNewSnapshot(id, image))
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), withProcessArgs("sleep", "100")), WithNewSnapshot(id, image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	expected := "hello" + newLine
 
 	// creating IO early for easy resource cleanup
-	direct, err := cio.NewDirectIO(ctx, false)
+	direct, err := newDirectIOStandard(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer direct.Delete()
 	var (
@@ -504,8 +685,7 @@ func TestContainerAttachProcess(t *testing.T) {
 
 	task, err := container.NewTask(ctx, empty())
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
@@ -515,14 +695,12 @@ func TestContainerAttachProcess(t *testing.T) {
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	spec, err := container.Spec(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	processSpec := spec.Process
@@ -530,18 +708,15 @@ func TestContainerAttachProcess(t *testing.T) {
 	execID := t.Name() + "_exec"
 	process, err := task.Exec(ctx, execID, processSpec, direct.IOCreate)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	processStatusC, err := process.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := process.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if _, err := fmt.Fprint(direct.Stdin, expected); err != nil {
@@ -549,8 +724,7 @@ func TestContainerAttachProcess(t *testing.T) {
 	}
 
 	if process, err = task.LoadProcess(ctx, execID, direct.IOAttach); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if _, err := fmt.Fprint(direct.Stdin, expected); err != nil {
@@ -599,13 +773,11 @@ func TestContainerUserID(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	direct, err := cio.NewDirectIO(ctx, false)
+	direct, err := newDirectIOStandard(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer direct.Delete()
 	var (
@@ -620,31 +792,27 @@ func TestContainerUserID(t *testing.T) {
 
 	// adm user in the alpine image has a uid of 3 and gid of 4.
 	container, err := client.NewContainer(ctx, id,
-		withNewSnapshot(id, image),
-		WithNewSpec(withImageConfig(image), oci.WithUserID(3), oci.WithProcessArgs("sh", "-c", "echo $(id -u):$(id -g)")),
+		WithNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image), oci.WithUserID(3), oci.WithProcessArgs("sh", "-c", "echo $(id -u):$(id -g)")),
 	)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	task, err := container.NewTask(ctx, direct.IOCreate)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	<-statusC
 
@@ -674,40 +842,35 @@ func TestContainerKillAll(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	container, err := client.NewContainer(ctx, id,
-		withNewSnapshot(id, image),
-		WithNewSpec(withImageConfig(image),
+		WithNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image),
 			withProcessArgs("sh", "-c", "top"),
 			oci.WithHostNamespace(specs.PIDNamespace),
 		),
 	)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	stdout := bytes.NewBuffer(nil)
-	task, err := container.NewTask(ctx, cio.NewIO(bytes.NewBuffer(nil), stdout, bytes.NewBuffer(nil)))
+	task, err := container.NewTask(ctx, cio.NewCreator(withByteBuffers(stdout)))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Kill(ctx, syscall.SIGKILL, WithKillAll); err != nil {
@@ -716,8 +879,7 @@ func TestContainerKillAll(t *testing.T) {
 
 	<-statusC
 	if _, err := task.Delete(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 }
 
@@ -740,7 +902,7 @@ func TestShimSigkilled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image)), withNewSnapshot(id, image))
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image)), WithNewSnapshot(id, image))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -801,10 +963,9 @@ func TestDaemonRestartWithRunningShim(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), oci.WithProcessArgs("sleep", "100")), withNewSnapshot(id, image))
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), oci.WithProcessArgs("sleep", "100")), WithNewSnapshot(id, image))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -883,19 +1044,17 @@ func TestContainerRuntimeOptions(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	container, err := client.NewContainer(
 		ctx, id,
-		WithNewSpec(withImageConfig(image), withExitStatus(7)),
-		withNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image), withExitStatus(7)),
+		WithNewSnapshot(id, image),
 		WithRuntime("io.containerd.runtime.v1.linux", &runctypes.RuncOptions{Runtime: "no-runc"}),
 	)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
@@ -926,40 +1085,35 @@ func TestContainerKillInitPidHost(t *testing.T) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	container, err := client.NewContainer(ctx, id,
-		withNewSnapshot(id, image),
-		WithNewSpec(withImageConfig(image),
+		WithNewSnapshot(id, image),
+		WithNewSpec(oci.WithImageConfig(image),
 			withProcessArgs("sh", "-c", "sleep 42; echo hi"),
 			oci.WithHostNamespace(specs.PIDNamespace),
 		),
 	)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	stdout := bytes.NewBuffer(nil)
-	task, err := container.NewTask(ctx, cio.NewIO(bytes.NewBuffer(nil), stdout, bytes.NewBuffer(nil)))
+	task, err := container.NewTask(ctx, cio.NewCreator(withByteBuffers(stdout)))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Start(ctx); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if err := task.Kill(ctx, syscall.SIGKILL); err != nil {
@@ -1022,11 +1176,10 @@ func testUserNamespaces(t *testing.T, readonlyRootFS bool) {
 
 	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	opts := []NewContainerOpts{WithNewSpec(withImageConfig(image),
+	opts := []NewContainerOpts{WithNewSpec(oci.WithImageConfig(image),
 		withExitStatus(7),
 		oci.WithUserNamespace(0, 1000, 10000),
 	)}
@@ -1038,12 +1191,11 @@ func testUserNamespaces(t *testing.T, readonlyRootFS bool) {
 
 	container, err := client.NewContainer(ctx, id, opts...)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
-	task, err := container.NewTask(ctx, cio.Stdio, func(_ context.Context, client *Client, r *TaskInfo) error {
+	task, err := container.NewTask(ctx, cio.NewCreator(cio.WithStdio), func(_ context.Context, client *Client, r *TaskInfo) error {
 		r.Options = &runctypes.CreateOptions{
 			IoUid: 1000,
 			IoGid: 1000,
@@ -1051,15 +1203,13 @@ func testUserNamespaces(t *testing.T, readonlyRootFS bool) {
 		return nil
 	})
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	if pid := task.Pid(); pid <= 0 {
@@ -1073,16 +1223,14 @@ func testUserNamespaces(t *testing.T, readonlyRootFS bool) {
 	status := <-statusC
 	code, _, err := status.Result()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if code != 7 {
 		t.Errorf("expected status 7 from wait but received %d", code)
 	}
 	deleteStatus, err := task.Delete(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if ec := deleteStatus.ExitCode(); ec != 7 {
 		t.Errorf("expected status 7 from delete but received %d", ec)
@@ -1105,35 +1253,28 @@ func TestTaskResize(t *testing.T) {
 	)
 	defer cancel()
 
-	if runtime.GOOS != "windows" {
-		image, err = client.GetImage(ctx, testImage)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-	}
-	container, err := client.NewContainer(ctx, id, WithNewSpec(withImageConfig(image), withExitStatus(7)), withNewSnapshot(id, image))
+	image, err = client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
+	}
+	container, err := client.NewContainer(ctx, id, WithNewSpec(oci.WithImageConfig(image), withExitStatus(7)), WithNewSnapshot(id, image))
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx, WithSnapshotCleanup)
 
 	task, err := container.NewTask(ctx, empty())
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer task.Delete(ctx)
 
 	statusC, err := task.Wait(ctx)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if err := task.Resize(ctx, 32, 32); err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	task.Kill(ctx, syscall.SIGKILL)
 	<-statusC
@@ -1154,14 +1295,12 @@ func TestContainerImage(t *testing.T) {
 
 	image, err := client.GetImage(ctx, testImage)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	container, err := client.NewContainer(ctx, id, WithNewSpec(), WithImage(image))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx)
 
@@ -1189,8 +1328,7 @@ func TestContainerNoImage(t *testing.T) {
 
 	container, err := client.NewContainer(ctx, id, WithNewSpec())
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer container.Delete(ctx)
 

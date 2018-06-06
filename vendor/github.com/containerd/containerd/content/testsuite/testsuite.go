@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package testsuite
 
 import (
@@ -14,29 +30,56 @@ import (
 	"time"
 
 	"github.com/containerd/containerd/content"
-	"github.com/containerd/containerd/namespaces"
-	"github.com/containerd/containerd/testutil"
+	"github.com/containerd/containerd/pkg/testutil"
+	"github.com/gotestyourself/gotestyourself/assert"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
 )
 
 // ContentSuite runs a test suite on the content store given a factory function.
 func ContentSuite(t *testing.T, name string, storeFn func(ctx context.Context, root string) (context.Context, content.Store, func() error, error)) {
 	t.Run("Writer", makeTest(t, name, storeFn, checkContentStoreWriter))
-	t.Run("UploadStatus", makeTest(t, name, storeFn, checkUploadStatus))
+	t.Run("UpdateStatus", makeTest(t, name, storeFn, checkUpdateStatus))
 	t.Run("Resume", makeTest(t, name, storeFn, checkResumeWriter))
 	t.Run("ResumeTruncate", makeTest(t, name, storeFn, checkResume(resumeTruncate)))
 	t.Run("ResumeDiscard", makeTest(t, name, storeFn, checkResume(resumeDiscard)))
 	t.Run("ResumeCopy", makeTest(t, name, storeFn, checkResume(resumeCopy)))
 	t.Run("ResumeCopySeeker", makeTest(t, name, storeFn, checkResume(resumeCopySeeker)))
 	t.Run("ResumeCopyReaderAt", makeTest(t, name, storeFn, checkResume(resumeCopyReaderAt)))
+	t.Run("SmallBlob", makeTest(t, name, storeFn, checkSmallBlob))
 	t.Run("Labels", makeTest(t, name, storeFn, checkLabels))
+
+	t.Run("CrossNamespaceAppend", makeTest(t, name, storeFn, checkCrossNSAppend))
+	t.Run("CrossNamespaceShare", makeTest(t, name, storeFn, checkCrossNSShare))
+}
+
+// ContextWrapper is used to decorate new context used inside the test
+// before using the context on the content store.
+// This can be used to support leasing and multiple namespaces tests.
+type ContextWrapper func(ctx context.Context) (context.Context, func(context.Context) error, error)
+
+type wrapperKey struct{}
+
+// SetContextWrapper sets the wrapper on the context for deriving
+// new test contexts from the context.
+func SetContextWrapper(ctx context.Context, w ContextWrapper) context.Context {
+	return context.WithValue(ctx, wrapperKey{}, w)
+}
+
+type nameKey struct{}
+
+// Name gets the test name from the context
+func Name(ctx context.Context) string {
+	name, ok := ctx.Value(nameKey{}).(string)
+	if !ok {
+		return ""
+	}
+	return name
 }
 
 func makeTest(t *testing.T, name string, storeFn func(ctx context.Context, root string) (context.Context, content.Store, func() error, error), fn func(ctx context.Context, t *testing.T, cs content.Store)) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx := namespaces.WithNamespace(context.Background(), name)
+		ctx := context.WithValue(context.Background(), nameKey{}, name)
 
 		tmpDir, err := ioutil.TempDir("", "content-suite-"+name+"-")
 		if err != nil {
@@ -54,7 +97,21 @@ func makeTest(t *testing.T, name string, storeFn func(ctx context.Context, root 
 			}
 		}()
 
-		defer testutil.DumpDir(t, tmpDir)
+		w, ok := ctx.Value(wrapperKey{}).(ContextWrapper)
+		if ok {
+			var done func(context.Context) error
+			ctx, done, err = w(ctx)
+			if err != nil {
+				t.Fatalf("Error wrapping context: %+v", err)
+			}
+			defer func() {
+				if err := done(ctx); err != nil && !t.Failed() {
+					t.Fatalf("Wrapper release failed: %+v", err)
+				}
+			}()
+		}
+
+		defer testutil.DumpDirOnFailure(t, tmpDir)
 		fn(ctx, t, cs)
 	}
 }
@@ -188,7 +245,7 @@ func checkResumeWriter(ctx context.Context, t *testing.T, cs content.Store) {
 	}
 
 	checkStatus(t, w1, expected, dgstFirst, preStart, postStart, preUpdate, postUpdate)
-	require.NoError(t, w1.Close(), "close first writer")
+	assert.NilError(t, w1.Close(), "close first writer")
 
 	w2, err := cs.Writer(ctx, ref, 256, dgst)
 	if err != nil {
@@ -212,7 +269,7 @@ func checkResumeWriter(ctx context.Context, t *testing.T, cs content.Store) {
 	}
 	postCommit := time.Now()
 
-	require.NoError(t, w2.Close(), "close second writer")
+	assert.NilError(t, w2.Close(), "close second writer")
 	info := content.Info{
 		Digest: dgst,
 		Size:   256,
@@ -223,7 +280,7 @@ func checkResumeWriter(ctx context.Context, t *testing.T, cs content.Store) {
 	}
 }
 
-func checkUploadStatus(ctx context.Context, t *testing.T, cs content.Store) {
+func checkUpdateStatus(ctx context.Context, t *testing.T, cs content.Store) {
 	c1, d1 := createContent(256)
 
 	preStart := time.Now()
@@ -467,6 +524,164 @@ func resumeCopyReaderAt(ctx context.Context, w content.Writer, b []byte, _, size
 	return errors.Wrap(content.Copy(ctx, w, r, size, dgst), "copy failed")
 }
 
+// checkSmallBlob tests reading a blob which is smaller than the read size.
+func checkSmallBlob(ctx context.Context, t *testing.T, store content.Store) {
+	blob := []byte(`foobar`)
+	blobSize := int64(len(blob))
+	blobDigest := digest.FromBytes(blob)
+	// test write
+	w, err := store.Writer(ctx, t.Name(), blobSize, blobDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Write(blob); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Commit(ctx, blobSize, blobDigest); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	// test read.
+	readSize := blobSize + 1
+	ra, err := store.ReaderAt(ctx, blobDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := io.NewSectionReader(ra, 0, readSize)
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ra.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d := digest.FromBytes(b)
+	if blobDigest != d {
+		t.Fatalf("expected %s (%q), got %s (%q)", blobDigest, string(blob),
+			d, string(b))
+	}
+}
+
+func checkCrossNSShare(ctx context.Context, t *testing.T, cs content.Store) {
+	wrap, ok := ctx.Value(wrapperKey{}).(ContextWrapper)
+	if !ok {
+		t.Skip("multiple contexts not supported")
+	}
+
+	var size int64 = 1000
+	b, d := createContent(size)
+	ref := fmt.Sprintf("ref-%d", size)
+	t1 := time.Now()
+
+	if err := content.WriteBlob(ctx, cs, ref, bytes.NewReader(b), size, d); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx2, done, err := wrap(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer done(ctx2)
+
+	w, err := cs.Writer(ctx2, ref, size, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t2 := time.Now()
+
+	checkStatus(t, w, content.Status{
+		Ref:    ref,
+		Offset: size,
+		Total:  size,
+	}, d, t1, t2, t1, t2)
+
+	if err := w.Commit(ctx2, size, d); err != nil {
+		t.Fatal(err)
+	}
+	t3 := time.Now()
+
+	info := content.Info{
+		Digest: d,
+		Size:   size,
+	}
+	if err := checkContent(ctx, cs, d, info, t1, t3, t1, t3); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := checkContent(ctx2, cs, d, info, t1, t3, t1, t3); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkCrossNSAppend(ctx context.Context, t *testing.T, cs content.Store) {
+	wrap, ok := ctx.Value(wrapperKey{}).(ContextWrapper)
+	if !ok {
+		t.Skip("multiple contexts not supported")
+	}
+
+	var size int64 = 1000
+	b, d := createContent(size)
+	ref := fmt.Sprintf("ref-%d", size)
+	t1 := time.Now()
+
+	if err := content.WriteBlob(ctx, cs, ref, bytes.NewReader(b), size, d); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx2, done, err := wrap(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer done(ctx2)
+
+	extra := []byte("appended bytes")
+	size2 := size + int64(len(extra))
+	b2 := make([]byte, size2)
+	copy(b2[:size], b)
+	copy(b2[size:], extra)
+	d2 := digest.FromBytes(b2)
+
+	w, err := cs.Writer(ctx2, ref, size, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t2 := time.Now()
+
+	checkStatus(t, w, content.Status{
+		Ref:    ref,
+		Offset: size,
+		Total:  size,
+	}, d, t1, t2, t1, t2)
+
+	if _, err := w.Write(extra); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := w.Commit(ctx2, size2, d2); err != nil {
+		t.Fatal(err)
+	}
+	t3 := time.Now()
+
+	info := content.Info{
+		Digest: d,
+		Size:   size,
+	}
+	if err := checkContent(ctx, cs, d, info, t1, t3, t1, t3); err != nil {
+		t.Fatal(err)
+	}
+
+	info2 := content.Info{
+		Digest: d2,
+		Size:   size2,
+	}
+	if err := checkContent(ctx2, cs, d2, info2, t1, t3, t1, t3); err != nil {
+		t.Fatal(err)
+	}
+
+}
+
 func checkStatus(t *testing.T, w content.Writer, expected content.Status, d digest.Digest, preStart, postStart, preUpdate, postUpdate time.Time) {
 	t.Helper()
 	st, err := w.Status()
@@ -544,6 +759,27 @@ func checkInfo(ctx context.Context, cs content.Store, d digest.Digest, expected 
 		if v != actual {
 			return errors.Errorf("unexpected value for label %q: %q, expected %q", k, actual, v)
 		}
+	}
+
+	return nil
+}
+func checkContent(ctx context.Context, cs content.Store, d digest.Digest, expected content.Info, c1, c2, u1, u2 time.Time) error {
+	if err := checkInfo(ctx, cs, d, expected, c1, c2, u1, u2); err != nil {
+		return err
+	}
+
+	b, err := content.ReadBlob(ctx, cs, d)
+	if err != nil {
+		return errors.Wrap(err, "failed to read blob")
+	}
+
+	if int64(len(b)) != expected.Size {
+		return errors.Errorf("wrong blob size %d, expected %d", len(b), expected.Size)
+	}
+
+	actual := digest.FromBytes(b)
+	if actual != d {
+		return errors.Errorf("wrong digest %s, expected %s", actual, d)
 	}
 
 	return nil

@@ -26,6 +26,8 @@ ifeq ($(OS_TYPE), linux)
 	docker run -it --rm --privileged -v $(TMP_DIR):/var/lib/containerd ${DOCKER_IMAGE}-shell /bin/bash || true
 	sudo rm -rf $(TMP_DIR)  	
 else
+	mkdir bootstrap || true #hack
+	cp -rf kubelet/ bootstrap/kubelet #hack
 	vagrant up
 	vagrant ssh 	
 endif
@@ -34,9 +36,10 @@ clean:
 ifeq ($(OS_TYPE), linux)
 	docker rmi ${DOCKER_IMAGE} || true
 	docker rmi ${DOCKER_IMAGE}-shell || true
-else 
+else
 	vagrant destroy || true
 	rm -rf $$PWD/bin || true
 	rm -rf $$PWD/src || true
 	rm -rf $$PWD/pkg || true
+	rm -rf $$PWD/bootstrap || true
 endif	

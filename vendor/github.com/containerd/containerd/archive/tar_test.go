@@ -1,5 +1,21 @@
 // +build !windows
 
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package archive
 
 import (
@@ -16,8 +32,8 @@ import (
 
 	_ "crypto/sha256"
 
-	"github.com/containerd/containerd/fs"
-	"github.com/containerd/containerd/fs/fstest"
+	"github.com/containerd/continuity/fs"
+	"github.com/containerd/continuity/fs/fstest"
 	"github.com/pkg/errors"
 )
 
@@ -643,7 +659,7 @@ func TestApplyTar(t *testing.T) {
 					return err
 				}
 				if _, err := os.Stat(p); err != nil {
-					return errors.Wrapf(err, "failure checking existance for %v", d)
+					return errors.Wrapf(err, "failure checking existence for %v", d)
 				}
 			}
 			return nil
@@ -1004,6 +1020,22 @@ func TestDiffTar(t *testing.T) {
 				fstest.RemoveAll("/d1"),
 				fstest.RemoveAll("/d2"),
 				fstest.CreateDir("/d3/", 0755),
+			),
+		},
+		{
+			name: "IgnoreSockets",
+			validators: []tarEntryValidator{
+				fileEntry("f2", []byte("content"), 0644),
+				// There should be _no_ socket here, despite the fstest.CreateSocket below
+				fileEntry("f3", []byte("content"), 0644),
+			},
+			a: fstest.Apply(
+				fstest.CreateFile("/f1", []byte("content"), 0644),
+			),
+			b: fstest.Apply(
+				fstest.CreateFile("/f2", []byte("content"), 0644),
+				fstest.CreateSocket("/s0", 0644),
+				fstest.CreateFile("/f3", []byte("content"), 0644),
 			),
 		},
 	}

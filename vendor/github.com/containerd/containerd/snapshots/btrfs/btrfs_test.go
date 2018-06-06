@@ -1,5 +1,21 @@
 // +build linux,!no_btrfs
 
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package btrfs
 
 import (
@@ -12,9 +28,9 @@ import (
 	"testing"
 
 	"github.com/containerd/containerd/mount"
+	"github.com/containerd/containerd/pkg/testutil"
 	"github.com/containerd/containerd/snapshots"
 	"github.com/containerd/containerd/snapshots/testsuite"
-	"github.com/containerd/containerd/testutil"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
@@ -29,20 +45,30 @@ func boltSnapshotter(t *testing.T) func(context.Context, string) (snapshots.Snap
 
 	return func(ctx context.Context, root string) (snapshots.Snapshotter, func() error, error) {
 
-		deviceName, cleanupDevice, err := testutil.NewLoopback(100 << 20) // 100 MB
+		loopbackSize := int64(100 << 20) // 100 MB
+		// mkfs.btrfs creates a fs which has a blocksize equal to the system default pagesize. If that pagesize
+		// is > 4KB, mounting the fs will fail unless we increase the size of the file used by mkfs.btrfs
+		if os.Getpagesize() > 4096 {
+			loopbackSize = int64(650 << 20) // 650 MB
+		}
+		deviceName, cleanupDevice, err := testutil.NewLoopback(loopbackSize)
+
 		if err != nil {
 			return nil, nil, err
 		}
 
 		if out, err := exec.Command(mkbtrfs, deviceName).CombinedOutput(); err != nil {
+			cleanupDevice()
 			return nil, nil, errors.Wrapf(err, "failed to make btrfs filesystem (out: %q)", out)
 		}
 		if out, err := exec.Command("mount", deviceName, root).CombinedOutput(); err != nil {
+			cleanupDevice()
 			return nil, nil, errors.Wrapf(err, "failed to mount device %s (out: %q)", deviceName, out)
 		}
 
 		snapshotter, err := NewSnapshotter(root)
 		if err != nil {
+			cleanupDevice()
 			return nil, nil, errors.Wrap(err, "failed to create new snapshotter")
 		}
 

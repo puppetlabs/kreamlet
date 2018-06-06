@@ -1,3 +1,19 @@
+/*
+   Copyright The containerd Authors.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package platforms
 
 import (
@@ -175,14 +191,16 @@ func TestParseSelector(t *testing.T) {
 			if testcase.skip {
 				t.Skip("this case is not yet supported")
 			}
-			m, err := Parse(testcase.input)
+			p, err := Parse(testcase.input)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if !reflect.DeepEqual(m.Spec(), testcase.expected) {
-				t.Fatalf("platform did not match expected: %#v != %#v", m.Spec(), testcase.expected)
+			if !reflect.DeepEqual(p, testcase.expected) {
+				t.Fatalf("platform did not match expected: %#v != %#v", p, testcase.expected)
 			}
+
+			m := NewMatcher(p)
 
 			// ensure that match works on the input to the output.
 			if ok := m.Match(testcase.expected); !ok {
@@ -193,7 +211,7 @@ func TestParseSelector(t *testing.T) {
 				t.Fatalf("unexpected matcher string:  %q != %q", fmt.Sprint(m), testcase.formatted)
 			}
 
-			formatted := Format(m.Spec())
+			formatted := Format(p)
 			if formatted != testcase.formatted {
 				t.Fatalf("unexpected format: %q != %q", formatted, testcase.formatted)
 			}
@@ -204,8 +222,8 @@ func TestParseSelector(t *testing.T) {
 				t.Fatalf("error parsing formatted output: %v", err)
 			}
 
-			if Format(reparsed.Spec()) != formatted {
-				t.Fatalf("normalized output did not survive the round trip: %v != %v", Format(reparsed.Spec()), formatted)
+			if Format(reparsed) != formatted {
+				t.Fatalf("normalized output did not survive the round trip: %v != %v", Format(reparsed), formatted)
 			}
 		})
 	}

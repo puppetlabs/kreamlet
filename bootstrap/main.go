@@ -1,16 +1,21 @@
 package main
 
 import (
-	"github.com/puppetlabs/bootstrap/kubelet"
-	//"log"
+	"log"
+
+	"github.com/puppetlabs/kreamlet/bootstrap/kubelet"
 )
 
 func main() {
 
-	i := ContainerComand{"service.linuxkit", "kube", "kubelet", "kubeadm-init.sh"}
-	initialise := i.containerExec.Run
-	//if err != nil {
-	//	log.Fatal(err)
-	//	}
-	return initialise
+	err := kubelet.Run("services.linuxkit", "process_1", "kubelet", []string{"kubeadm-init.sh"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("let's have a look")
+	err = kubelet.Run("services.linuxkit", "process_2", "kubelet", []string{"ls", "-alt"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("we reached this far")
 }
