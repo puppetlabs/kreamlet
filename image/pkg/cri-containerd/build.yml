@@ -1,0 +1,32 @@
+org: linuxkit
+image: cri-containerd
+network: true
+arches:
+  - amd64
+config:
+  binds:
+  - /etc/resolv.conf:/etc/resolv.conf
+  - /run:/run:rshared,rbind
+  - /dev:/dev
+  - /tmp:/tmp
+  - /var:/var:rshared,rbind
+  - /var/lib/kubeadm:/etc/kubernetes
+  - /var/lib/cni/conf:/etc/cni/net.d:rshared,rbind
+  - /var/lib/cni/bin:/opt/cni/bin:rshared,rbind
+  - /run/containerd/containerd.sock:/run/containerd/containerd.sock
+  - /var/lib/kubelet-plugins:/usr/libexec/kubernetes/kubelet-plugins:rshared,rbind
+  mounts:
+  - type: bind
+    source: /sys/fs/cgroup
+    destination: /sys/fs/cgroup
+    options: ["rw","rbind","rshared","nosuid","noexec","nodev","relatime"]
+  capabilities:
+  - all
+  rootfsPropagation: shared
+  pid: host
+  runtime:
+    mkdir:
+    - /var/lib/kubeadm
+    - /var/lib/cni/conf
+    - /var/lib/cni/bin
+    - /var/lib/kubelet-plugins
