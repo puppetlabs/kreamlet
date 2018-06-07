@@ -1,21 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
-	"github.com/puppetlabs/bootstrap/kubelet"
+	"github.com/puppetlabs/kreamlet/bootstrap/kubelet"
 )
 
 func main() {
+	run("services.linuxkit", nextExecID(), "kubelet", []string{"pwd"})
+	run("services.linuxkit", nextExecID(), "kubelet", []string{"ls", "-alt"})
+	run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
 
-	err := kubelet.Run("services.linuxkit", "process_1", "kubelet", []string{"kubeadm-init.sh"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("let's have a look")
-	err = kubelet.Run("services.linuxkit", "process_2", "kubelet", []string{"ls", "-alt"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("we reached this far")
 }
+
+func run(namespace string, processID string, containerID string, command []string) {
+	err := kubelet.Run(namespace, processID, containerID, command)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+func nextExecID() string {
+	execIDCounter = execIDCounter + 1
+	return fmt.Sprintf("exec_id_%v", execIDCounter)
+}
+
+var execIDCounter = 0
