@@ -41,7 +41,7 @@ ifeq ($(OS_TYPE), linux)
 	$$PWD/image && linuxkit run --mem 4096 kube-master.iso  
 else
 	cd $$PWD/image && KUBE_FORMATS=iso-efi make all
-	cd $$PWD/image && linuxkit run --mem 4096 kube-master-efi.iso
+	cd $$PWD/image && linuxkit run --mem 4096 -iso --uefi kube-master-efi.iso
 endif
 
 
