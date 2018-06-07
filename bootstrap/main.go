@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/puppetlabs/kreamlet/bootstrap/kubelet"
+	"github.com/puppetlabs/bootstrap/kubelet"
 )
 
 func main() {
