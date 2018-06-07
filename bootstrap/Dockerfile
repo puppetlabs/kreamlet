@@ -9,5 +9,5 @@ FROM scratch
 
 WORKDIR /usr/bin
 COPY --from=build /go/src/github.com/puppetlabs/bootstrap/bin /usr/bin
-CMD ["bootsrap"]
+CMD ["bootstrap"]
 
