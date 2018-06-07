@@ -1,0 +1,3 @@
+*.iso
+*-state/
+kube-weave.yaml

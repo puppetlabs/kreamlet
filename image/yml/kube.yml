@@ -44,7 +44,9 @@ services:
     cgroupsPath: podruntime/kubelet
   - name: bootstrap
     image: puppet/bootstrap:latest
-
+    cgroupsPath: systemreserved/bootstrap
+    binds:
+      - /run:/run            
 files:
   - path: etc/linuxkit.yml
     metadata: yaml
