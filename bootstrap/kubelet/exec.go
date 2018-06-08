@@ -103,10 +103,6 @@ func withOurStreams(stdin io.Reader, stdout, stderr io.Writer) cio.Opt {
 	}
 }
 
-type Writer interface {
-	Write(p []byte) (n int, err error)
-}
-
 type ourWriter struct{}
 
 func (ourWriter) Write(p []byte) (n int, err error) {
