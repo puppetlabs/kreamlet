@@ -11,7 +11,7 @@ func main() {
 
 	for true {
 		// Time to wait for the kubelet container to start
-		time.Sleep(30 * time.Second)
+		time.Sleep(5 * time.Second)
 		run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
 
 	}
