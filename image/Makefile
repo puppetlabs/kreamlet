@@ -5,8 +5,6 @@ KUBE_NETWORK_WEAVE ?= v2.2.1
 
 KUBE_FORMATS ?= aws gcp vhd iso-bios
 
-KUBE_FORMAT_ARGS := $(patsubst %,-format %,$(KUBE_FORMATS))
-
 KUBE_BASENAME ?= kube-
 
 .PHONY: all masters nodes
