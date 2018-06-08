@@ -3,7 +3,9 @@ package kubelet
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
@@ -11,7 +13,7 @@ import (
 )
 
 //Run the passed command on the specified containerID with namespace, assigning processID for diagnostics
-func Run(namespace string, processID string, containerID string, command []string) error {
+func Run(namespace string, processID string, containerID string, command []string) (string, error) {
 
 	log.Printf("Entered with namespace %v, processID %v, containerID %v and command %v\n", namespace, processID, containerID, command)
 
@@ -19,7 +21,7 @@ func Run(namespace string, processID string, containerID string, command []strin
 	client, err := containerd.New("/run/containerd/containerd.sock")
 
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer client.Close()
 
@@ -33,30 +35,30 @@ func Run(namespace string, processID string, containerID string, command []strin
 		containerID,
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	log.Printf("Getting OCI runtime specification\n")
 	spec, err := container.Spec(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	log.Printf("Getting container task\n")
 	task, err := container.Task(ctx, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	defer task.Delete(ctx)
+	defer cleanup(ctx, task)
 
 	pspec := spec.Process
 	pspec.Args = command
 
 	log.Printf("Creating new process with processID %v on container task with command %v\n", processID, command)
-	process, err := task.Exec(ctx, processID, pspec, cio.NewCreator(cio.WithStdio))
+	process, err := task.Exec(ctx, processID, pspec, cio.NewCreator(withIO))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	exitStatusC, err := process.Wait(ctx)
@@ -66,7 +68,7 @@ func Run(namespace string, processID string, containerID string, command []strin
 
 	log.Printf("Starting process\n")
 	if err := process.Start(ctx); err != nil {
-		return err
+		return "", err
 	}
 
 	log.Printf("Collecting result\n")
@@ -75,9 +77,41 @@ func Run(namespace string, processID string, containerID string, command []strin
 	log.Printf("Exited with status %v at %v, error is %v\n", statusCode, exitedAt, err)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	if statusCode != 0 {
+		return "", fmt.Errorf("Status code of %v recevied when trying to execute command %v", statusCode, command)
+	}
+	return output, nil
 
 }
+
+func cleanup(ctx context.Context, task containerd.Task) {
+	log.Printf("cleaning up task with ID %v and PID %v \n", task.ID(), task.Pid())
+	task.Delete(ctx)
+}
+func withIO(opt *cio.Streams) {
+	withOurStreams(os.Stdin, os.Stdout, os.Stderr)(opt)
+}
+
+func withOurStreams(stdin io.Reader, stdout, stderr io.Writer) cio.Opt {
+	return func(opt *cio.Streams) {
+		opt.Stdin = stdin
+		opt.Stdout = ourWriter{}
+		opt.Stderr = stderr
+	}
+}
+
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type ourWriter struct{}
+
+func (ourWriter) Write(p []byte) (n int, err error) {
+	output = string(p[:])
+	return 2, nil
+}
+
+var output string
