@@ -1,0 +1,47 @@
+org: linuxkit
+image: kubelet
+network: true
+arches:
+  - amd64
+config:
+  binds:
+  - /dev:/dev
+  - /etc/resolv.conf:/etc/resolv.conf
+  - /etc/os-release:/etc/os-release
+  - /run:/run:rshared,rbind
+  - /var:/var:rshared,rbind
+  - /var/lib/kubeadm:/etc/kubernetes
+  - /etc/kubelet.sh.conf:/etc/kubelet.sh.conf
+  - /etc/kubeadm:/etc/kubeadm
+  - /var/lib/kubelet-plugins:/usr/libexec/kubernetes/kubelet-plugins:rshared,rbind
+  - /var/lib/cni/conf:/etc/cni/net.d:rshared,rbind
+  - /var/lib/cni/bin:/opt/cni/bin:rshared,rbind
+  mounts:
+  - type: bind
+    source: /sys/fs/cgroup
+    destination: /sys/fs/cgroup
+    options: ["rw","rbind","rshared","nosuid","noexec","nodev","relatime"]
+  capabilities:
+  - all
+  rootfsPropagation: shared
+  pid: host
+  runtime:
+    cgroups:
+    - systemreserved
+    - podruntime
+    - kubepods
+    mkdir:
+    - /var/lib/kubeadm
+    - /var/lib/cni/conf
+    - /var/lib/cni/bin
+    - /var/lib/kubelet-plugins
+    - /var/lib/nfs/statd/sm
+    mounts:
+    - type: bind
+      source: /var/lib/cni/bin
+      destination: /opt/cni/bin
+      options: ["rw","bind"]
+    - type: bind
+      source: /var/lib/cni/conf
+      destination: /etc/cni/net.d
+      options: ["rw","bind"]

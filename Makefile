@@ -1,6 +1,7 @@
 ROOT_DIR=$(shell pwd)
 BUILD_DIR=./bin
-DOCKER_IMAGE=puppetlabs/kreamlet
+DOCKER_IMAGE=puppet/kreamlet
+OS_TYPE=$(shell echo `uname`| tr '[A-Z]' '[a-z]')
 
 .PHONY: all build-dirs lint test format vet binary clean
 
@@ -31,6 +32,18 @@ binary: build-dirs
 shell:
 	docker build -t ${DOCKER_IMAGE}-shell -f hack/Dockerfile.shell .
 	docker run -it --rm ${DOCKER_IMAGE}-shell /bin/bash
+
+bootstrap-dev:
+	cd $$PWD/bootstrap && make image
+	if [ -d $$PWD/image/kube-master-state ]; then rm -rf $$PWD/image/kube-master-state; fi 
+ifeq ($(OS_TYPE), linux)	
+	cd $$PWD/image && KUBE_FORMATS=iso-bios make all
+	cd $$PWD/image && linuxkit run -publish 6443:6443 --mem 4096 kube-master.iso  
+else
+	cd $$PWD/image && KUBE_FORMATS=iso-efi make all
+	cd $$PWD/image && linuxkit run --mem 4096 -iso --uefi kube-master-efi.iso
+endif
+
 
 clean: 
 	docker rmi ${DOCKER_IMAGE}

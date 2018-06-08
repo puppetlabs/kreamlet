@@ -50,11 +50,6 @@ func Run(namespace string, processID string, containerID string, command []strin
 
 	defer task.Delete(ctx)
 
-	exitStatusC, err := task.Wait(ctx)
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	pspec := spec.Process
 	pspec.Args = command
 
@@ -62,6 +57,11 @@ func Run(namespace string, processID string, containerID string, command []strin
 	process, err := task.Exec(ctx, processID, pspec, cio.NewCreator(cio.WithStdio))
 	if err != nil {
 		return err
+	}
+
+	exitStatusC, err := process.Wait(ctx)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	log.Printf("Starting process\n")

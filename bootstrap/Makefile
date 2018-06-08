@@ -1,5 +1,5 @@
 ROOT_DIR=$(shell pwd)
-DOCKER_IMAGE=puppetlabs/bootstrap
+DOCKER_IMAGE=puppet/bootstrap
 OS_TYPE=$(shell echo `uname`| tr '[A-Z]' '[a-z]')
 TMP_DIR=$$PWD/tmp
 
@@ -16,8 +16,10 @@ vet:
 	go vet $$(go list ./... | grep -v /vendor/)
 
 image:
+	if [ -d $$PWD/vendor ]; then rm -rf $$PWD/vendor ; fi 
+	cp -Rn $$PWD/../vendor  $$PWD/vendor
 	docker build -t ${DOCKER_IMAGE} .
-
+	rm -rf $$PWD/vendor
 shell:
 ifeq ($(OS_TYPE), linux)
 	if [ -d $(TMP_DIR) ]; then sudo rm -rf  $(TMP_DIR); fi 

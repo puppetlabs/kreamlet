@@ -1,0 +1,33 @@
+services:
+  - name: docker
+    image: docker:18.03.0-ce-dind
+    capabilities:
+     - all
+    pid: host
+    mounts:
+     - type: bind
+       source: /sys/fs/cgroup
+       destination: /sys/fs/cgroup
+       options: ["rw","rbind","rshared","nosuid","noexec","nodev","relatime"]
+    binds:
+     - /dev:/dev
+     - /etc/resolv.conf:/etc/resolv.conf
+     - /etc/os-release:/etc/os-release
+     - /lib/modules:/lib/modules
+     - /run:/run
+     - /var:/var:rshared,rbind
+     - /var/lib/kubeadm:/etc/kubernetes
+     - /var/lib/cni/conf:/etc/cni/net.d:rshared,rbind
+     - /var/lib/cni/bin:/opt/cni/bin:rshared,rbind
+     - /var/lib/kubelet-plugins:/usr/libexec/kubernetes/kubelet-plugins:rshared,rbind
+    rootfsPropagation: shared
+    command: ["/usr/local/bin/docker-init", "/usr/local/bin/dockerd"]
+    runtime:
+      mkdir: ["/var/lib/kubeadm", "/var/lib/cni/conf", "/var/lib/cni/bin", "/var/lib/kubelet-plugins"]
+    cgroupsPath: podruntime/docker
+  - name: kubernetes-docker-image-cache-common
+    image: linuxkit/kubernetes-docker-image-cache-common:2da947148638cbbef869215cdb0e572c0402833c
+    cgroupsPath: podruntime/common-cache
+files:
+  - path: /etc/kubelet.sh.conf
+    contents: ""

@@ -1,0 +1,64 @@
+onboot:
+  - name: bridge
+    image: busybox:latest
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        set -e
+        field() {
+            local f=$1
+            local d=$2
+            if [ -r "/run/config/cni.bridge/$f" ] ; then
+                cat "/run/config/cni.bridge/$f"
+            else
+                echo -e "\"$d\"\\n"
+            fi
+        }
+        subnet="$(field subnet '10.1.0.0/16')"
+        gateway="$(field gateway '10.1.0.1')"
+        ns="$(field ns '10.1.0.1')"
+        cat <<EOF >/var/lib/cni/conf/10-default.conflist
+        {
+          "cniVersion": "0.3.1",
+          "name": "default",
+          "plugins": [
+            {
+              "type": "bridge",
+              "bridge": "cni0",
+              "isDefaultGateway": true,
+              "ipMasq": true,
+              "hairpinMode": true,
+              "ipam": {
+                "type": "host-local",
+                "subnet": $subnet,
+                "gateway": $gateway
+              },
+              "dns": {
+                "nameservers": [$ns]
+              }
+            },
+            {
+              "type": "portmap",
+              "capabilities": {
+                "portMappings": true
+              },
+              "snat": true
+            }
+          ]
+        }
+        EOF
+        cat <<EOF >/var/lib/cni/conf/99-loopback.conf
+        {
+          "cniVersion": "0.2.0",
+          "type": "loopback"
+        }
+        EOF
+        if [ -r "/run/config/cni.bridge/debug-show-configs" ] ; then
+            grep . /var/lib/cni/conf/*.conf /var/lib/cni/conf/*.conflist
+        fi
+    runtime:
+      mkdir: ["/var/lib/cni/conf"]
+    binds:
+      - /var/lib:/var/lib
+      - /run/config:/run/config
