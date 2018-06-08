@@ -9,12 +9,13 @@ import (
 
 func main() {
 
-	for true {
-		// Time to wait for the kubelet container to start
-		time.Sleep(5 * time.Second)
-		run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
+	// Time to wait for the kubelet container to start
+	time.Sleep(5 * time.Second)
+	// Initalise the cluster
+	run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
+	// Get the admin creds
+	run("services.linuxkit", nextExecID(), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"})
 
-	}
 }
 
 func run(namespace string, processID string, containerID string, command []string) {
