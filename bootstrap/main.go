@@ -2,28 +2,49 @@ package main
 
 import (
 	"fmt"
-	"github.com/puppetlabs/bootstrap/kubelet"
 	"log"
 	"time"
+
+	"crypto/rand"
+
+	"github.com/puppetlabs/bootstrap/kubelet"
 )
 
 func main() {
+	taskRoot := random()
+	var output string
+	var err error
 
 	// Time to wait for the kubelet container to start
 	time.Sleep(5 * time.Second)
-	run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
-}
 
-func run(namespace string, processID string, containerID string, command []string) {
-	err := kubelet.Run(namespace, processID, containerID, command)
+	// Initalise the cluster
+	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"kubeadm-init.sh"})
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("output is \n%v\n", output)
 
+	// Get the admin creds
+	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("output is \n%v\n", output)
 }
-func nextExecID() string {
+
+func random() string {
+	n := 3
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%X", b)
+}
+
+func nextExecID(taskRoot string) string {
 	execIDCounter = execIDCounter + 1
-	return fmt.Sprintf("exec_id_%v", execIDCounter)
+	return fmt.Sprintf("%v_%v", taskRoot, execIDCounter)
 }
 
 var execIDCounter = 0
