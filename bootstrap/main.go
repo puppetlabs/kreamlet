@@ -2,16 +2,19 @@ package main
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/puppetlabs/bootstrap/kubelet"
+	"log"
+	"time"
 )
 
 func main() {
-	run("services.linuxkit", nextExecID(), "kubelet", []string{"pwd"})
-	run("services.linuxkit", nextExecID(), "kubelet", []string{"ls", "-alt"})
-	run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
 
+	for true {
+		// Time to wait for the kubelet container to start
+		time.Sleep(30 * time.Second)
+		run("services.linuxkit", nextExecID(), "kubelet", []string{"kubeadm-init.sh"})
+
+	}
 }
 
 func run(namespace string, processID string, containerID string, command []string) {
