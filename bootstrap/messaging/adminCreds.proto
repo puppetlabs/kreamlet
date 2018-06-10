@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package messaging;
 
-service GuploadService {
+service AdminCreds {
         rpc Upload(stream Chunk) returns (UploadStatus) {}
 }
 
