@@ -1,5 +1,13 @@
-service AdminCreds {
+syntax = "proto3";
+
+package messaging;
+
+service GuploadService {
         rpc Upload(stream Chunk) returns (UploadStatus) {}
+}
+
+message Chunk {
+        bytes Content = 1;
 }
 
 enum UploadStatusCode {
