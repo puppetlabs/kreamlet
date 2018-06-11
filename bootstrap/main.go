@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 	"time"
 
 	"crypto/rand"
@@ -24,6 +27,8 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("output is \n%v\n", output)
+	joinToken, err := getJoinToken(output)
+	fmt.Printf("join token is \n%v\n", joinToken)
 
 	// Get the admin creds
 	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"})
@@ -48,3 +53,18 @@ func nextExecID(taskRoot string) string {
 }
 
 var execIDCounter = 0
+
+func getJoinToken(output string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	re := regexp.MustCompile("kubeadm join .* --token ([^ ]+) ")
+
+	for scanner.Scan() {
+		s := scanner.Text()
+		matches := re.FindStringSubmatch(s)
+		if len(matches) == 2 {
+			return matches[1], nil
+		}
+	}
+
+	return "", nil
+}
