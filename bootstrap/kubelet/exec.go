@@ -56,7 +56,7 @@ func Run(namespace string, processID string, containerID string, command []strin
 	pspec.Args = command
 
 	log.Printf("Creating new process with processID %v on container task with command %v\n", processID, command)
-	process, err := task.Exec(ctx, processID, pspec, cio.NewCreator(withIO))
+	process, err := task.Exec(ctx, processID, pspec, cio.NewCreator(cio.WithStdio))
 	if err != nil {
 		return "", err
 	}
@@ -91,6 +91,7 @@ func cleanup(ctx context.Context, task containerd.Task) {
 	log.Printf("cleaning up task with ID %v and PID %v \n", task.ID(), task.Pid())
 	task.Delete(ctx)
 }
+
 func withIO(opt *cio.Streams) {
 	withOurStreams(os.Stdin, os.Stdout, os.Stderr)(opt)
 }
