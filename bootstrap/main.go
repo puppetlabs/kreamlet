@@ -10,7 +10,7 @@ import (
 
 	"crypto/rand"
 
-	"github.com/puppetlabs/bootstrap/kubelet"
+	"github.com/puppetlabs/kreamlet/bootstrap/kubelet"
 )
 
 func main() {
