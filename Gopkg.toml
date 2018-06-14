@@ -21,10 +21,83 @@
 #  version = "2.4.0"
 
 
-[[constraint]]
+[[override]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.4"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
   version = "0.0.1"
+
+[[constraint]]
+  name = "github.com/containerd/containerd"
+  branch = "master"
+
+[[override]]
+  name = "github.com/containerd/go-cni"
+  branch = "master"
+
+[[override]]
+  name = "github.com/containerd/cri"
+  branch = "master"
+
+[[override]]
+  name = "github.com/containerd/fifo"
+  branch = "master"
+  
+[[override]]
+  name = "github.com/containerd/go-runc"
+  branch = "master"
+
+[[override]]
+  name = "github.com/containerd/typeurl"
+  branch = "master"
+
+[[override]]
+  name = "github.com/containerd/zfs"
+  branch = "master"
+    
+[[override]]
+  name = "github.com/containernetworking/cni"
+  branch = "master"
+
+[[override]]
+  name = "github.com/coreos/go-systemd"
+  branch = "master"
+
+[[override]]
+  name = "github.com/davecgh/go-spew"
+  branch = "master"
+
+[[override]]
+  name = "k8s.io/kubernetes"
+  branch = "master"  
+
+[[override]]
+  name = "k8s.io/utils"
+  branch = "master"
+  
+[[override]]
+  name = "k8s.io/client-go"
+  branch = "master"
+  
+[[override]]
+  name = "k8s.io/apiserver"
+  branch = "master"
+  
+[[override]]
+  name = "k8s.io/apimachinery"
+  branch = "master"
+  
+[[override]]
+  name = "k8s.io/api"
+  branch = "master"
+  
+[[override]]
+  name = "google.golang.org/grpc"
+  version = "v1.12.2"
+  
+[[override]]
+  name = "github.com/golang/protobuf"
+  version = "v1.1.0"
+  

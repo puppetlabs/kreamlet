@@ -48,6 +48,6 @@ endif
 
 
 clean: 
-	docker rmi ${DOCKER_IMAGE}
+	docker rmi ${DOCKER_IMAGE} || true
 	rm -rf  ${ROOT_DIR}/bin/*
-	
+	cd $$PWD/image && make clean
