@@ -3,20 +3,20 @@ syntax = "proto3";
 package messaging;
 
 service AdminCreds {
-        rpc Upload(stream Chunk) returns (UploadStatus) {}
+        rpc GetAdminCreds(AdminCredsRequest) returns (AdminCredsResponse) {}
 }
 
-message Chunk {
-        bytes Content = 1;
+message AdminCredsRequest {
 }
 
-enum UploadStatusCode {
+message AdminCredsResponse {
+        StatusCode StatusCode = 1;
+        string Message = 2;
+        bytes Content = 3;
+}
+
+enum StatusCode {
         Unknown = 0;
         Ok = 1;
         Failed = 2;
-}
-
-message UploadStatus {
-        string Message = 1;
-        UploadStatusCode Code = 2;
 }
