@@ -20,6 +20,10 @@ image:
 	cp -Rn $$PWD/../vendor  $$PWD/vendor
 	docker build -t ${DOCKER_IMAGE} .
 	rm -rf $$PWD/vendor
+
+protoc:
+	protoc --go_out=plugins=grpc:. messaging/*.proto
+
 shell:
 ifeq ($(OS_TYPE), linux)
 	if [ -d $(TMP_DIR) ]; then sudo rm -rf  $(TMP_DIR); fi 
@@ -28,8 +32,6 @@ ifeq ($(OS_TYPE), linux)
 	docker run -it --rm --privileged -v $(TMP_DIR):/var/lib/containerd ${DOCKER_IMAGE}-shell /bin/bash || true
 	sudo rm -rf $(TMP_DIR)  	
 else
-	mkdir bootstrap || true #hack
-	cp -rf kubelet/ bootstrap/kubelet #hack
 	vagrant up
 	vagrant ssh 	
 endif

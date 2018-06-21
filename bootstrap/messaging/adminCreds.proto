@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package messaging;
+
+service AdminCreds {
+        rpc GetAdminCreds(AdminCredsRequest) returns (AdminCredsResponse) {}
+}
+
+message AdminCredsRequest {
+}
+
+message AdminCredsResponse {
+        StatusCode StatusCode = 1;
+        string Message = 2;
+        bytes Content = 3;
+}
+
+enum StatusCode {
+        Unknown = 0;
+        Ok = 1;
+        Failed = 2;
+}
