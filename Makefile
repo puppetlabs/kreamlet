@@ -39,11 +39,11 @@ bootstrap-dev:
 ifeq ($(OS_TYPE), linux)	
 	if [ -d $$PWD/image/kube-master-state ]; then rm -rf $$PWD/image/kube-master-state; fi
 	cd $$PWD/image && KUBE_FORMATS=iso-bios make all
-	cd $$PWD/image && linuxkit run -publish 6443:6443 --mem 4096 kube-master.iso  
+	cd $$PWD/image && linuxkit run -publish 6443:6443 -publish 50091:50091 --mem 4096 kube-master.iso  
 else
 	if [ -d $$PWD/image/kube-master-efi-state ]; then rm -rf $$PWD/image/kube-master-efi-state; fi
 	cd $$PWD/image && KUBE_FORMATS=iso-efi make all
-	cd $$PWD/image && linuxkit run --mem 4096 -iso --uefi kube-master-efi.iso
+	cd $$PWD/image && linuxkit run --mem 4096 -publish 6443:6443 -publish 50091:50091 -iso --uefi kube-master-efi.iso
 endif
 
 
