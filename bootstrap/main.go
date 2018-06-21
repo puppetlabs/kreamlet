@@ -21,7 +21,7 @@ import (
 
 const (
 	port                    = ":50091"
-	adminCredsFromLocalFile = true
+	adminCredsFromLocalFile = false
 	pathToCredsFile         = "/etc/kubernetes/admin.conf"
 )
 
