@@ -21,7 +21,7 @@ import (
 
 const (
 	port                    = ":50091"
-	adminCredsFromLocalFile = false
+	adminCredsFromLocalFile = true
 	pathToCredsFile         = "/etc/kubernetes/admin.conf"
 )
 
@@ -79,6 +79,7 @@ func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*
 		content, err = getAdminCredsViaContainerd()
 
 	}
+
 	if err == nil {
 		r.Content = content
 		r.StatusCode = pb.StatusCode_Ok
