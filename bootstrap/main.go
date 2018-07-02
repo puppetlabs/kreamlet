@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -34,11 +35,15 @@ func main() {
 
 	taskRoot := random()
 
+	runCmd(taskRoot, []string{"ls"}, true)
 	err := initKubeAdm(taskRoot)
 	if err != nil {
 		//if initialising kube admin doesn't succeed, there is nothing we can do here, so just exit
-		log.Fatal(err)
+		log.Fatalf("kube admin initialisation failed %+v", err)
 	}
+
+	// joinToken, err := getJoinToken(taskRoot)
+	// fmt.Printf("Join token is %v", joinToken)
 
 	//for now keep the main thread alive whilst we wait for a tcp connection
 	//(we should be make a listener channel and waiting for it to complete?)
@@ -48,23 +53,53 @@ func main() {
 	}
 }
 
+func runCmd(taskRoot string, cmd []string, captureOutput bool) {
+	output, err := kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", cmd, captureOutput)
+	if err != nil {
+		fmt.Printf("runCmd::Ran: %v with captureOutput [%v] and output: %v\nErr: %v\n\n\n\n\n", cmd, captureOutput, output, err)
+	}
+}
+
 func initKubeAdm(taskRoot string) error {
 	var output string
 	var err error
 
-	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"kubeadm-init.sh"})
+	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"kubeadm-init.sh"}, true)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("initKubeAdm::Error occured running kubeadm-init.sh - %v", err)
+		os.Exit(1)
 	}
-	fmt.Printf("output is \n%v\n", output)
-	joinToken, err := getJoinToken(output)
-	fmt.Printf("join token is \n%v\n", joinToken)
+	fmt.Printf("initKubeAdm::output is [%v]\n\n\n", output)
+	// joinToken, err := extractJoinTokenFromInitOutput(output)
+	// fmt.Printf("initKubeAdm::extractJoinToken returning: \n output %v, \n jt %v, \n err %v.", output, joinToken, err)
 	return err
-
 }
 
-// server is used to implement helloworld.GreeterServer.
+func getJoinToken(taskRoot string) (string, error) {
+	var output, joinToken string
+	var err error
+
+	output, err = kubelet.Run("services.linuxkit", nextExecID(taskRoot), "kubelet", []string{"kubeadm", "token", "create"}, true)
+	fmt.Printf("getJoinToken::the output is [%v] err is %v\n", output, err)
+
+	if err == nil {
+		joinToken, err = extractJoinTokenFromTokenCreate(output)
+		fmt.Printf("getJoinToken::jt is [%v] err is %v\n", joinToken, err)
+	}
+	fmt.Printf("getJoinToken::returning: \n output [%v], \n jt [%v], \n err [%v].", output, joinToken, err)
+	return joinToken, err
+}
+
+// server is used to implement AdminCredsServer
 type server struct{}
+
+// GetJoinToken implements AdminCredsServer.GetJoinToken
+func (s *server) GetJoinToken(ctx context.Context, in *pb.JoinTokenRequest) (*pb.JoinTokenResponse, error) {
+	jt, err := getJoinToken(nextExecID(random()))
+	r := &pb.JoinTokenResponse{}
+	r.JoinToken = jt
+	return r, err
+}
 
 // GetAdminCreds implements AdminCredsServer.GetAdminCreds
 func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*pb.AdminCredsResponse, error) {
@@ -77,7 +112,6 @@ func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*
 		content, err = getAdminCredsFromLocalFile()
 	} else {
 		content, err = getAdminCredsViaContainerd()
-
 	}
 
 	if err == nil {
@@ -94,7 +128,7 @@ func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*
 func getAdminCredsViaContainerd() ([]byte, error) {
 	var output string
 	var err error
-	output, err = kubelet.Run("services.linuxkit", nextExecID(random()), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"})
+	output, err = kubelet.Run("services.linuxkit", nextExecID(random()), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"}, true)
 	fmt.Printf("output is \n%v and err is %v\n", output, err)
 	return []byte(output), err
 }
@@ -104,19 +138,42 @@ func getAdminCredsFromLocalFile() ([]byte, error) {
 }
 
 func startListening() {
-	fmt.Printf("Entered startListening about to listen on port %v\n", port)
+	fmt.Printf("startListening::Entered startListening about to listen on port %v\n", port)
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("startListening::failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterAdminCredsServer(s, &server{})
 	reflection.Register(s)
-	fmt.Printf("About to listen on port %v\n", port)
+	fmt.Printf("startListening::About to listen on port %v\n", port)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("startListening::failed to serve: %v", err)
 	}
-	fmt.Printf("Listening on port %v\n", port)
+	fmt.Printf("startListening::Listening on port %v\n", port)
+}
+
+func extractJoinTokenFromInitOutput(output string) (string, error) {
+	return extractRegex("kubeadm join .* --token ([^ ]+) ", output)
+}
+
+func extractJoinTokenFromTokenCreate(output string) (string, error) {
+	re := regexp.MustCompile(`\r?\n`)
+	return re.ReplaceAllString(output, ""), nil
+}
+func extractRegex(regex string, output string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	re := regexp.MustCompile(regex)
+
+	for scanner.Scan() {
+		s := scanner.Text()
+		matches := re.FindStringSubmatch(s)
+		if len(matches) == 2 {
+			return matches[1], nil
+		}
+	}
+
+	return "", nil
 }
 
 func random() string {
@@ -134,18 +191,3 @@ func nextExecID(taskRoot string) string {
 }
 
 var execIDCounter = 0
-
-func getJoinToken(output string) (string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	re := regexp.MustCompile("kubeadm join .* --token ([^ ]+) ")
-
-	for scanner.Scan() {
-		s := scanner.Text()
-		matches := re.FindStringSubmatch(s)
-		if len(matches) == 2 {
-			return matches[1], nil
-		}
-	}
-
-	return "", nil
-}

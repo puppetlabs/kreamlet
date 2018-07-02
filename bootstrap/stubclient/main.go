@@ -25,9 +25,16 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	r, err := c.GetAdminCreds(ctx, &pb.AdminCredsRequest{})
 	if err != nil {
 		log.Fatalf("could not invoke admin creds server: %v", err)
 	}
 	log.Printf("Response: %s", r)
+
+	jtr, err := c.GetJoinToken(ctx, &pb.JoinTokenRequest{})
+	if err != nil {
+		log.Fatalf("could not invoke admin creds server: %v", err)
+	}
+	log.Printf("Join token response: %s", jtr)
 }
