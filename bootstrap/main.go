@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -9,7 +8,6 @@ import (
 	"net"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	"crypto/rand"
@@ -21,9 +19,8 @@ import (
 )
 
 const (
-	port                    = ":50091"
-	adminCredsFromLocalFile = true
-	pathToCredsFile         = "/etc/kubernetes/admin.conf"
+	port            = ":50091"
+	pathToCredsFile = "/etc/kubernetes/admin.conf"
 )
 
 func main() {
@@ -41,9 +38,6 @@ func main() {
 		//if initialising kube admin doesn't succeed, there is nothing we can do here, so just exit
 		log.Fatalf("kube admin initialisation failed %+v", err)
 	}
-
-	// joinToken, err := getJoinToken(taskRoot)
-	// fmt.Printf("Join token is %v", joinToken)
 
 	//for now keep the main thread alive whilst we wait for a tcp connection
 	//(we should be make a listener channel and waiting for it to complete?)
@@ -70,8 +64,6 @@ func initKubeAdm(taskRoot string) error {
 		os.Exit(1)
 	}
 	fmt.Printf("initKubeAdm::output is [%v]\n\n\n", output)
-	// joinToken, err := extractJoinTokenFromInitOutput(output)
-	// fmt.Printf("initKubeAdm::extractJoinToken returning: \n output %v, \n jt %v, \n err %v.", output, joinToken, err)
 	return err
 }
 
@@ -83,7 +75,7 @@ func getJoinToken(taskRoot string) (string, error) {
 	fmt.Printf("getJoinToken::the output is [%v] err is %v\n", output, err)
 
 	if err == nil {
-		joinToken, err = extractJoinTokenFromTokenCreate(output)
+		joinToken, err = extractJoinToken(output)
 		fmt.Printf("getJoinToken::jt is [%v] err is %v\n", joinToken, err)
 	}
 	fmt.Printf("getJoinToken::returning: \n output [%v], \n jt [%v], \n err [%v].", output, joinToken, err)
@@ -105,14 +97,7 @@ func (s *server) GetJoinToken(ctx context.Context, in *pb.JoinTokenRequest) (*pb
 func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*pb.AdminCredsResponse, error) {
 	r := &pb.AdminCredsResponse{}
 
-	var content []byte
-	var err error
-
-	if adminCredsFromLocalFile {
-		content, err = getAdminCredsFromLocalFile()
-	} else {
-		content, err = getAdminCredsViaContainerd()
-	}
+	content, err := ioutil.ReadFile(pathToCredsFile)
 
 	if err == nil {
 		r.Content = content
@@ -121,20 +106,8 @@ func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*
 		r.StatusCode = pb.StatusCode_Failed
 		r.Message = err.Error()
 	}
-	fmt.Printf("Returning %v and err of %v\n", r, err)
+	fmt.Printf("GetAdminCreds::Returning %v and err of %v\n", r, err)
 	return r, err
-}
-
-func getAdminCredsViaContainerd() ([]byte, error) {
-	var output string
-	var err error
-	output, err = kubelet.Run("services.linuxkit", nextExecID(random()), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"}, true)
-	fmt.Printf("output is \n%v and err is %v\n", output, err)
-	return []byte(output), err
-}
-
-func getAdminCredsFromLocalFile() ([]byte, error) {
-	return ioutil.ReadFile(pathToCredsFile)
 }
 
 func startListening() {
@@ -153,29 +126,10 @@ func startListening() {
 	fmt.Printf("startListening::Listening on port %v\n", port)
 }
 
-func extractJoinTokenFromInitOutput(output string) (string, error) {
-	return extractRegex("kubeadm join .* --token ([^ ]+) ", output)
-}
-
-func extractJoinTokenFromTokenCreate(output string) (string, error) {
+func extractJoinToken(output string) (string, error) {
 	re := regexp.MustCompile(`\r?\n`)
 	return re.ReplaceAllString(output, ""), nil
 }
-func extractRegex(regex string, output string) (string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	re := regexp.MustCompile(regex)
-
-	for scanner.Scan() {
-		s := scanner.Text()
-		matches := re.FindStringSubmatch(s)
-		if len(matches) == 2 {
-			return matches[1], nil
-		}
-	}
-
-	return "", nil
-}
-
 func random() string {
 	n := 3
 	b := make([]byte, n)
