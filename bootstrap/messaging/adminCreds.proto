@@ -4,6 +4,7 @@ package messaging;
 
 service AdminCreds {
         rpc GetAdminCreds(AdminCredsRequest) returns (AdminCredsResponse) {}
+        rpc GetJoinToken(JoinTokenRequest) returns (JoinTokenResponse) {}
 }
 
 message AdminCredsRequest {
@@ -19,4 +20,11 @@ enum StatusCode {
         Unknown = 0;
         Ok = 1;
         Failed = 2;
+}
+
+message JoinTokenRequest {
+}
+
+message JoinTokenResponse {
+        string JoinToken = 1;
 }
