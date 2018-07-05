@@ -44,7 +44,7 @@ services:
     cgroupsPath: podruntime/kubelet
   - name: bootstrap
     image: puppet/bootstrap:latest
-    cgroupsPath: systemreserved/bootstrap
+    cgroupsPath: podruntime/bootstrap
     binds:
       - /run:/run
 files:
