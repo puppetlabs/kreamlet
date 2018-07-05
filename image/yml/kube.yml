@@ -15,7 +15,7 @@ onboot:
   - name: sysfs
     image: linuxkit/sysfs:dc7b876f395fa44c2b93bad6b987e418497c5b34
   - name: dhcpcd
-    image: linuxkit/dhcpcd:193a81bd4a93779c8a048d66e0cb1d201d0ae102
+    image: linuxkit/dhcpcd:1fe0db6b1eb7bcb1e4823e61e08afe6d48af7d16
     command: ["/sbin/dhcpcd", "--nobackground", "-f", "/dhcpcd.conf", "-1"]
   - name: metadata
     image: linuxkit/metadata:6962be42ec291db67ac9bb4267d8fd06fd464f48
@@ -44,11 +44,9 @@ services:
     cgroupsPath: podruntime/kubelet
   - name: bootstrap
     image: puppet/bootstrap:latest
-    cgroupsPath: podruntime/bootstrap
+    cgroupsPath: systemreserved/bootstrap
     binds:
       - /run:/run
-      - /etc:/etc
-      - /var/lib:var/lib        
 files:
   - path: etc/linuxkit.yml
     metadata: yaml
@@ -68,7 +66,7 @@ files:
   - path: /opt/cni/bin
     directory: true
   - path: root/.ssh/authorized_keys
-    source: ~/.ssh/id_rsa.pub
+    source: ~/go/src/github.com/puppetlabs/kreamlet/ssh/id_rsa.pub
     mode: "0600"
     optional: true
 trust:
