@@ -39,6 +39,7 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 		"-detached",
 		"-publish", sshPort + ":22",
 		"-publish", kubePort + ":6443",
+		"-publish", "50091:50091",
 		"-networking", "default",
 		"-cpus", cpus,
 		"-mem", memory,
