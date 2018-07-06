@@ -68,7 +68,7 @@ files:
   - path: /opt/cni/bin
     directory: true
   - path: root/.ssh/authorized_keys
-    source: ~/go/src/github.com/puppetlabs/kreamlet/ssh/id_rsa.pub
+    source: ~/.ssh/id_rsa.pub
     mode: "0600"
     optional: true
 trust:
