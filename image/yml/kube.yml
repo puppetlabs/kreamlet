@@ -47,6 +47,8 @@ services:
     cgroupsPath: podruntime/bootstrap
     binds:
       - /run:/run
+      - /etc:/etc
+      - /var/lib:var/lib
 files:
   - path: etc/linuxkit.yml
     metadata: yaml
@@ -66,7 +68,7 @@ files:
   - path: /opt/cni/bin
     directory: true
   - path: root/.ssh/authorized_keys
-    source: ~/.ssh/id_rsa.pub
+    source: ~/go/src/github.com/puppetlabs/kreamlet/ssh/id_rsa.pub
     mode: "0600"
     optional: true
 trust:
