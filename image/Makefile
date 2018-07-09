@@ -12,12 +12,12 @@ all: masters nodes
 
 masters: yml/kube.yml yml/$(KUBE_RUNTIME).yml yml/$(KUBE_RUNTIME)-master.yml yml/$(KUBE_NETWORK).yml $(KUBE_EXTRA_YML)
 	for kube_format in $(KUBE_FORMATS); do \
-		linuxkit $(LINUXKIT_ARGS) build $(LINUXKIT_BUILD_ARGS) -name $(KUBE_BASENAME)master -format $$kube_format $^; \
+		linuxkit $(LINUXKIT_ARGS) build $(LINUXKIT_BUILD_ARGS) -size 512M -name $(KUBE_BASENAME)master -format $$kube_format $^; \
 	done
 
 nodes: yml/kube.yml yml/$(KUBE_RUNTIME).yml yml/$(KUBE_NETWORK).yml $(KUBE_EXTRA_YML)
 	for kube_format in $(KUBE_FORMATS); do \
-	    linuxkit $(LINUXKIT_ARGS) build $(LINUXKIT_BUILD_ARGS) -name $(KUBE_BASENAME)node -format $$kube_format $^; \
+	    linuxkit $(LINUXKIT_ARGS) build $(LINUXKIT_BUILD_ARGS) -size 512M -name $(KUBE_BASENAME)node -format $$kube_format $^; \
 	done
 
 yml/weave.yml: kube-weave.yaml
