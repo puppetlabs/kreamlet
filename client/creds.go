@@ -5,6 +5,7 @@ import (
 	pb "github.com/puppetlabs/kreamlet/bootstrap/messaging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -19,7 +20,7 @@ func Creds() error {
 	fmt.Printf("Connecting to grpc server\n")
 
 	// Getting users home dir to use later
-	var homedir string = os.Getenv("HOME")
+	homedir := os.Getenv("HOME")
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
@@ -27,6 +28,7 @@ func Creds() error {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
+
 	c := pb.NewAdminCredsClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -37,14 +39,11 @@ func Creds() error {
 	}
 	log.Printf("Response: %s", r)
 
-	fmt.Printf("Creating admin.conf\n")
-	file, err := os.Create(homedir + "/.kream/admin.conf")
-	if err != nil {
-		log.Fatal("Cannot create file", err)
-	}
-	defer file.Close()
+	err = ioutil.WriteFile(homedir+"/.kream/admin.conf", r.Content, 0644)
 
-	fmt.Fprintf(file, "test")
+	if err != nil {
+		log.Fatalf("could not write to file: %v", err)
+	}
 
 	return err
 }

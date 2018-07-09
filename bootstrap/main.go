@@ -94,6 +94,8 @@ func (s *server) GetAdminCreds(ctx context.Context, in *pb.AdminCredsRequest) (*
 func getAdminCredsViaContainerd() ([]byte, error) {
 	var output string
 	var err error
+	// TODO handle file not being there better
+	time.Sleep(60 * time.Second)
 	output, err = kubelet.Run("services.linuxkit", nextExecID(random()), "kubelet", []string{"cat", "/etc/kubernetes/admin.conf"})
 	fmt.Printf("output is \n%v and err is %v\n", output, err)
 	return []byte(output), err
