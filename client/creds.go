@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -45,5 +46,22 @@ func Creds() error {
 		log.Fatalf("could not write to file: %v", err)
 	}
 
+	input, err := ioutil.ReadFile(homedir + "/.kream/admin.conf")
+	if err != nil {
+		log.Fatalf("could not open file: %v", err)
+	}
+
+	lines := strings.Split(string(input), "\n")
+
+	for i, line := range lines {
+		if strings.Contains(line, "server:") {
+			lines[i] = "    server: https://kubernetes.default:6444"
+		}
+	}
+	output := strings.Join(lines, "\n")
+	err = ioutil.WriteFile(homedir+"/.kream/admin.conf", []byte(output), 0644)
+	if err != nil {
+		log.Fatalf("could not write to file: %v", err)
+	}
 	return err
 }
