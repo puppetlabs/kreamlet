@@ -8,6 +8,7 @@ import (
 )
 
 func Run(sshPort string, kubePort string, cpus string, memory string, disk string) error {
+
 	// Checking for linuxkit binary
 	binary, lookErr := exec.LookPath("linuxkit")
 	if lookErr != nil {
@@ -19,7 +20,6 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 
 	// Removing old state if the run function is called
 	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
-
 		fmt.Println("Creating a new cluster state directory")
 		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
 		os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
@@ -30,6 +30,17 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
 		os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
 	}
+
+	// Check if iso is already downloaded
+	if _, err := os.Stat(homedir + "/.kream/kube-master.iso"); os.IsNotExist(err) {
+		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/kube-master.iso"
+		err := DownloadFile(homedir+"/.kream/kube-master.iso", fileUrl)
+		if err != nil {
+			panic(err)
+		}
+
+	}
+
 	//TODO vendor in Linuxkit
 	args := []string{
 		"linuxkit",
@@ -58,5 +69,4 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	}
 	return execErr
 
-	return nil
 }
