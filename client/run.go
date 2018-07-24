@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"syscall"
 )
 
 func Run(sshPort string, kubePort string, cpus string, memory string, disk string) error {
@@ -43,7 +42,6 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 
 	//TODO vendor in Linuxkit
 	args := []string{
-		"linuxkit",
 		"run",
 		"qemu",
 		"-containerized",
@@ -57,16 +55,13 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 		"-state", homedir + "/.kream/kube-master-state",
 		"-disk", "size=" + disk,
 		"-data-file", homedir + "/.kream/kube-master-state/metadata.json",
-		"-iso", homedir + "/.kream/kube-master.iso",
-	}
+		"-iso", homedir + "/.kream/kube-master.iso"}
 
-	env := os.Environ()
-
-	// This uses syscall to pass the above args to run linuxkit
-	execErr := syscall.Exec(binary, args, env)
+	// This uses exec.Command func to pass the above args to run linuxkit
+	execErr := exec.Command(binary, args...).Run()
 	if execErr != nil {
-		panic(execErr)
+		fmt.Println(execErr)
 	}
-	return execErr
+	return nil
 
 }
