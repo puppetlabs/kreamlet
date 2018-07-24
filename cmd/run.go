@@ -13,6 +13,9 @@ var RunCmd = &cobra.Command{
 	Run: func(ccmd *cobra.Command, args []string) {
 		StartController()
 	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		GetCreds()
+	},
 }
 
 var sshPort, kubePort, cpus, memory, disk string
@@ -41,6 +44,16 @@ func StartController() error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	return err
 
+	return err
+}
+
+func GetCreds() error {
+
+	err := client.Creds()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return err
 }
