@@ -18,7 +18,10 @@ const (
 
 func Creds() error {
 
-	fmt.Printf("Connecting to grpc server\n")
+	fmt.Printf("waiting for the OS to boot\n")
+
+	//wait for grpc server to start
+	time.Sleep(45 * time.Second)
 
 	// Getting users home dir to use later
 	homedir := os.Getenv("HOME")
@@ -38,7 +41,7 @@ func Creds() error {
 	if err != nil {
 		log.Fatalf("could not invoke admin creds server: %v", err)
 	}
-	log.Printf("Response: %s", r)
+	//log.Printf("Response: %s", r)
 
 	err = ioutil.WriteFile(homedir+"/.kream/admin.conf", r.Content, 0644)
 
@@ -63,5 +66,9 @@ func Creds() error {
 	if err != nil {
 		log.Fatalf("could not write to file: %v", err)
 	}
+
+	fmt.Println("To connect to your cluster copy and paste the below line into your terminal")
+	fmt.Println("export KUBECONFIG=~/.kream/admin.conf")
+
 	return err
 }
