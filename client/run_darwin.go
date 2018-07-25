@@ -31,7 +31,7 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	}
 
 	// Check if iso is already downloaded
-	if _, err := os.Stat(homedir + "/.kream/kube-master.iso"); os.IsNotExist(err) {
+	if _, err := os.Stat(homedir + "/.kream/kube-master-efi.iso"); os.IsNotExist(err) {
 		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/kube-master-efi.iso"
 		err := DownloadFile(homedir+"/.kream/kube-master-efi.iso", fileUrl)
 		if err != nil {
