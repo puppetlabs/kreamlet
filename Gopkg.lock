@@ -14,6 +14,12 @@
   version = "v0.6.11"
 
 [[projects]]
+  name = "github.com/VividCortex/ewma"
+  packages = ["."]
+  revision = "b24eb346a94c3ba12c1da1e564dbac1b498a77ce"
+  version = "v1.1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/containerd/containerd"
   packages = [
@@ -131,6 +137,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
   name = "github.com/opencontainers/go-digest"
   packages = ["."]
   revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
@@ -199,6 +211,17 @@
   name = "github.com/syndtr/gocapability"
   packages = ["capability"]
   revision = "33e07d32887e1e06b7c025f27ce52f62c7990bc0"
+
+[[projects]]
+  name = "github.com/vbauerster/mpb"
+  packages = [
+    ".",
+    "cwriter",
+    "decor",
+    "internal"
+  ]
+  revision = "3674fd1f0789dbb003aa91a7b06138df0ef83c0f"
+  version = "v3.3.1"
 
 [[projects]]
   branch = "master"
@@ -300,6 +323,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "514895121740065e87a9c662637a0c06b2774d9cb8b50393ce974d73f564c16e"
+  inputs-digest = "02e43d6d2f255fecb5b4685d4898ad526f4d479348b0ea74487d366a0549088a"
   solver-name = "gps-cdcl"
   solver-version = 1

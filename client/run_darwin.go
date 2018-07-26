@@ -19,11 +19,11 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 
 	// Removing old state if the run function is called
 	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
-		fmt.Println("Creating a new cluster state directory")
+		fmt.Println("creating a new cluster state directory")
 		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
 		os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
 	} else {
-		fmt.Println("Removing the old cluster state")
+		fmt.Println("removing the old cluster state")
 		// We need to recreate the state folder to add the metadata.json file
 		os.RemoveAll(homedir + "/.kream/kube-master-state")
 		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
@@ -33,7 +33,8 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	// Check if iso is already downloaded
 	if _, err := os.Stat(homedir + "/.kream/kube-master-efi.iso"); os.IsNotExist(err) {
 		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/kube-master-efi.iso"
-		err := DownloadFile(homedir+"/.kream/kube-master-efi.iso", fileUrl)
+		fmt.Println("downloading the kubernetes iso")
+		err := DownloadFile(fileUrl)
 		if err != nil {
 			panic(err)
 		}

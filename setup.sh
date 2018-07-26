@@ -10,11 +10,6 @@ fi
 if [ ! -f $GOPATH/bin/linuxkit ]; then  
 	go get -u github.com/linuxkit/linuxkit/src/cmd/linuxkit  
 fi       	
-# Getting the kube-master.iso from s3
-if [ ! -f ~/.kream/kube-master.iso ]; then 
-	mkdir -p ~/.kream
-	wget https://s3.amazonaws.com/puppet-cloud-and-containers/kream/kube-master.iso -O ~/.kream/kube-master.iso 
-fi
 # Making kream binary
 make binary
 
