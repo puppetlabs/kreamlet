@@ -21,7 +21,7 @@ func Creds() error {
 	fmt.Printf("waiting for the OS to boot\n")
 
 	//wait for grpc server to start
-	time.Sleep(45 * time.Second)
+	LoadingBar()
 
 	// Getting users home dir to use later
 	homedir := os.Getenv("HOME")
