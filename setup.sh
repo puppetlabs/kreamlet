@@ -4,7 +4,7 @@ if cat /etc/hosts | grep kubernetes.default
 then
 	echo "hostfile entry is already there"
 else	
-	sudo echo -e "127.0.0.1 kubernetes.default">>/etc/hosts
+	sudo echo "127.0.0.1 kubernetes.default">>/etc/hosts
 fi	
 # Getting Linxkit 
 if [ ! -f $GOPATH/bin/linuxkit ]; then  
