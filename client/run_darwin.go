@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func Run(sshPort string, kubePort string, cpus string, memory string, disk string) error {
@@ -31,15 +32,15 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	} else {
 		fmt.Println("removing the old cluster state")
 		// We need to recreate the state folder to add the metadata.json file
-		err := os.RemoveAll(homedir + "/.kream/kube-master-state")
-		if err != nil {
-			return err
+		rm := os.RemoveAll(homedir + "/.kream/kube-master-state")
+		if rm != nil {
+			return rm
 		}
-		err = os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
-		if err != nil {
-			return err
+		mk := os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
+		if mk != nil {
+			return mk
 		}
-		_, err = os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		_, err := os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
 		if err != nil {
 			return err
 		}
@@ -48,8 +49,9 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	// Check if iso is already downloaded
 	if _, err := os.Stat(homedir + "/.kream/kube-master-efi.iso"); os.IsNotExist(err) {
 		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/kube-master-efi.iso"
+		dest := (homedir + "/.kream/" + filepath.Base(fileUrl))
 		fmt.Println("downloading the kubernetes iso")
-		err := DownloadFile(fileUrl)
+		err := DownloadFile(fileUrl, dest)
 		if err != nil {
 			panic(err)
 		}

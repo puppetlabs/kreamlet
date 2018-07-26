@@ -5,16 +5,14 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"time"
 
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
 )
 
-func DownloadFile(url string) error {
-
-	homedir := os.Getenv("HOME")
+func DownloadFile(url string, destName string) error {
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -30,7 +28,6 @@ func DownloadFile(url string) error {
 	size := resp.ContentLength
 
 	// create dest
-	destName := (homedir + "/.kream/" + filepath.Base(url))
 	dest, err := os.Create(destName)
 	if err != nil {
 		fmt.Printf("Can't create %s: %v\n", destName, err)
