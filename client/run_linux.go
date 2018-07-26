@@ -20,14 +20,29 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	// Removing old state if the run function is called
 	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
 		fmt.Println("creating a new cluster state directory")
-		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
-		os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		err := os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
+		if err != nil {
+			return err
+		}
+		_, err = os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		if err != nil {
+			return err
+		}
 	} else {
 		fmt.Println("removing the old cluster state")
 		// We need to recreate the state folder to add the metadata.json file
-		os.RemoveAll(homedir + "/.kream/kube-master-state")
-		os.Mkdir(homedir+"/.kream/kube-master-state", 0700)
-		os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		err := os.RemoveAll(homedir + "/.kream/kube-master-state")
+		if err != nil {
+			return err
+		}
+		err := os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
+		if err != nil {
+			return err
+		}
+		_, err = os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Check if iso is already downloaded
