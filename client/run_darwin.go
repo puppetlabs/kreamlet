@@ -12,7 +12,10 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	// Checking for linuxkit binary
 	binary, lookErr := exec.LookPath("linuxkit")
 	if lookErr != nil {
-		panic(lookErr)
+		fmt.Println("downloading linuxkit binary")
+		fileUrl := "https://github.com/linuxkit/linuxkit/releases/download/v0.5/linuxkit-darwin-amd64"
+		dest := ("/usr/local/bin" + filepath.Base(fileUrl))
+		fmt.Println(dest)
 	}
 
 	// Getting users home dir to use later
@@ -21,11 +24,11 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	// Removing old state if the run function is called
 	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
 		fmt.Println("creating a new cluster state directory")
-		err := os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
-		if err != nil {
+		mk := os.MkdirAll(homedir+"/.kream/kube-master-state", 0700)
+		if mk != nil {
 			return err
 		}
-		_, err = os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
+		_, err := os.OpenFile(homedir+"/.kream/kube-master-state/metadata.json", os.O_RDONLY|os.O_CREATE, 0700)
 		if err != nil {
 			return err
 		}
