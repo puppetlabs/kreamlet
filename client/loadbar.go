@@ -33,8 +33,8 @@ func LoadingBar() {
 		),
 		mpb.AppendDecorators(decor.Percentage()),
 	)
-	// simulating some work
-	max := 5000 * time.Millisecond
+	// waiting for os to boot
+	max := 6000 * time.Millisecond
 	for i := 0; i < total; i++ {
 		start := time.Now()
 		time.Sleep(time.Duration(rand.Intn(10)+1) * max / 100)
