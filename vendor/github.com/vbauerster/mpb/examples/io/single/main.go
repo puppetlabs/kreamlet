@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	"fmt"
@@ -12,9 +12,8 @@ import (
 	"github.com/vbauerster/mpb/decor"
 )
 
-func DownloadFile(url string) error {
-
-	homedir := os.Getenv("HOME")
+func main() {
+	url := "https://github.com/onivim/oni/releases/download/v0.3.4/Oni-0.3.4-amd64-linux.deb"
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -24,17 +23,17 @@ func DownloadFile(url string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Server return non-200 status: %s\n", resp.Status)
-		return err
+		return
 	}
 
 	size := resp.ContentLength
 
 	// create dest
-	destName := (homedir + "/.kream/" + filepath.Base(url))
+	destName := filepath.Base(url)
 	dest, err := os.Create(destName)
 	if err != nil {
 		fmt.Printf("Can't create %s: %v\n", destName, err)
-		return err
+		return
 	}
 	defer dest.Close()
 
@@ -62,7 +61,4 @@ func DownloadFile(url string) error {
 	io.Copy(dest, reader)
 
 	p.Wait()
-
-	return nil
-
 }
