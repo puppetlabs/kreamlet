@@ -14,8 +14,19 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	if lookErr != nil {
 		fmt.Println("downloading linuxkit binary")
 		fileUrl := "https://github.com/linuxkit/linuxkit/releases/download/v0.5/linuxkit-amd64"
-		dest := ("/usr/local/bin" + filepath.Base(fileUrl))
-		fmt.Println(dest)
+		dest := "/usr/local/bin/linuxkit"
+		err := DownloadFile(fileUrl, dest)
+		if err != nil {
+			fmt.Println("there has been an error downloading the linuxkit binary")
+			os.Exit(1)
+		}
+		chx := os.Chmod(dest, 0755)
+		if chx != nil {
+			fmt.Println("could not change permissions on the linuxkit binary")
+			os.Exit(1)
+		}
+
+		binary = dest
 	}
 
 	// Getting users home dir to use later

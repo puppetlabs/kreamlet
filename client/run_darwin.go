@@ -26,6 +26,7 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 			fmt.Println("could not change permissions on the linuxkit binary")
 			os.Exit(1)
 		}
+
 		binary = dest
 	}
 
