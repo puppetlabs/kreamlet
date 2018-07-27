@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	//"path/filepath"
 	"time"
 
 	"github.com/vbauerster/mpb"
