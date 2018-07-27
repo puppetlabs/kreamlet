@@ -6,11 +6,6 @@ then
 else	
 	sudo echo "127.0.0.1 kubernetes.default">>/etc/hosts
 fi	
-# Getting Linxkit 
-if [ ! -f $GOPATH/bin/linuxkit ]; then  
-	go get -u github.com/linuxkit/linuxkit/src/cmd/linuxkit  
-fi       	
-# Making kream binary
 make binary
 
 # Chmod the ssh keys
