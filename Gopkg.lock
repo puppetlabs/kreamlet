@@ -137,6 +137,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/lextoumbourou/goodhosts"
+  packages = ["."]
+  revision = "f9508a5690d9f48bfe5449d967cee37434591a29"
+  version = "v2.1.0"
+
+[[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
@@ -323,6 +329,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "02e43d6d2f255fecb5b4685d4898ad526f4d479348b0ea74487d366a0549088a"
+  inputs-digest = "bfb586c5971f830abfb37074054346f67292df63d9da051f8f31379f833750e5"
   solver-name = "gps-cdcl"
   solver-version = 1

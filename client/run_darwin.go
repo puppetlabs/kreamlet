@@ -9,6 +9,12 @@ import (
 
 func Run(sshPort string, kubePort string, cpus string, memory string, disk string) error {
 
+	// Checking for hostfile entry
+	err := Hostfile()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// Checking for linuxkit binary
 	binary, lookErr := exec.LookPath("linuxkit")
 	if lookErr != nil {

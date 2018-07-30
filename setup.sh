@@ -1,11 +1,5 @@
 #!/bin/bash -ex     
-# Adding kubernetes.default to the host file for kubectl to us
-if cat /etc/hosts | grep kubernetes.default  
-then
-	echo "hostfile entry is already there"
-else	
-	sudo echo "127.0.0.1 kubernetes.default">>/etc/hosts
-fi	
+
 make binary
 
 # Chmod the ssh keys
