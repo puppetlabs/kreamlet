@@ -37,7 +37,7 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	}
 
 	// Getting users home dir to use later
-	var homedir string = os.Getenv("HOME")
+	homedir := os.Getenv("HOME")
 
 	// Removing old state if the run function is called
 	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
@@ -77,6 +77,24 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 			panic(err)
 		}
 
+	}
+
+	// Check for .ssh folder in the kream directory
+	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
+		mk := os.MkdirAll(homedir+"/.kream/ssh", 0700)
+		if mk != nil {
+			return err
+		}
+	}
+
+	// Check if ssh keys are already there
+	if _, err := os.Stat(homedir + "/.kream/ssh/id_rsa"); os.IsNotExist(err) {
+		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/id_rsa"
+		dest := (homedir + "/.kream/ssh/" + filepath.Base(fileUrl))
+		err := DownloadFile(fileUrl, dest)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//TODO vendor in Linuxkit
