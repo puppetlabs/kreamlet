@@ -78,6 +78,24 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 
 	}
 
+	// Check for .ssh folder in the kream directory
+	if _, err := os.Stat(homedir + "/.kream/ssh"); err != nil {
+		mk := os.MkdirAll(homedir+"/.kream/ssh", 0700)
+		if mk != nil {
+			return err
+		}
+	}
+
+	// Check if ssh keys are already there
+	if _, err := os.Stat(homedir + "/.kream/ssh/id_rsa"); os.IsNotExist(err) {
+		fileUrl := "https://s3.amazonaws.com/puppet-cloud-and-containers/kream/id_rsa"
+		dest := (homedir + "/.kream/ssh/" + filepath.Base(fileUrl))
+		err := DownloadFile(fileUrl, dest)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	//TODO vendor in Linuxkit
 	args := []string{
 		"run",
