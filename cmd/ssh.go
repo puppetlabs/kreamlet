@@ -1,6 +1,7 @@
 package cmd
 
 import (
+
 	"bufio"
 	"fmt"
 	"github.com/puppetlabs/kreamlet/client"
@@ -65,5 +66,4 @@ func scanConfig() string {
 	config, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	config = strings.Trim(config, "\n")
 	return config
-
 }
