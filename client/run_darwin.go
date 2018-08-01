@@ -80,7 +80,8 @@ func Run(sshPort string, kubePort string, cpus string, memory string, disk strin
 	}
 
 	// Check for .ssh folder in the kream directory
-	if _, err := os.Stat(homedir + "/.kream/kube-master-state"); err != nil {
+
+	if _, err := os.Stat(homedir + "/.kream/ssh"); err != nil {
 		mk := os.MkdirAll(homedir+"/.kream/ssh", 0700)
 		if mk != nil {
 			return err
