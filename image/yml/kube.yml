@@ -1,43 +1,43 @@
 kernel:
-  image: linuxkit/kernel:4.14.40
+  image: linuxkit/kernel:4.14.62
   cmdline: "console=tty0 console=ttyS0"
 init:
-  - linuxkit/init:c79d7587fcd0a195b8a3ecafe428a30e735cf2b4
-  - linuxkit/runc:d659de11767a419319b175700a7c6f64b8704f8c
-  - linuxkit/containerd:018fc633223d8a49f650da365603a5abccc6a423
-  - linuxkit/ca-certificates:f882e9be933fac737bf1f4d303a4bb49a12f302f
+  - linuxkit/init:v0.6
+  - linuxkit/runc:v0.6
+  - linuxkit/containerd:v0.6
+  - linuxkit/ca-certificates:v0.6
 onboot:
   - name: sysctl
-    image: linuxkit/sysctl:2a98cb7a116d4d8a71498cea0e0ad8116a9b5a3b
+    image: linuxkit/sysctl:v0.6
     binds:
      - /etc/sysctl.d/01-kubernetes.conf:/etc/sysctl.d/01-kubernetes.conf
     readonly: false
   - name: sysfs
-    image: linuxkit/sysfs:dc7b876f395fa44c2b93bad6b987e418497c5b34
+    image: linuxkit/sysfs:v0.6
   - name: dhcpcd
-    image: linuxkit/dhcpcd:1fe0db6b1eb7bcb1e4823e61e08afe6d48af7d16
+    image: linuxkit/dhcpcd:v0.6
     command: ["/sbin/dhcpcd", "--nobackground", "-f", "/dhcpcd.conf", "-1"]
   - name: metadata
-    image: linuxkit/metadata:6962be42ec291db67ac9bb4267d8fd06fd464f48
+    image: linuxkit/metadata:v0.6
   - name: format
-    image: linuxkit/format:9a537dd3eaefd02dbc01c598b843fba33da8c1a5
+    image: linuxkit/format:v0.6
   - name: mounts
-    image: linuxkit/mount:a718496fa5ea2a7a9f7552eac64c7f3699fb6a86
+    image: linuxkit/mount:v0.6
     command: ["/usr/bin/mountie", "/var/lib/"]
 services:
   - name: getty
-    image: linuxkit/getty:3fa8e2240c1392ba4af508d3e6be8548443b12cc
+    image: linuxkit/getty:v0.6
     env:
      - INSECURE=true
     cgroupsPath: systemreserved/getty
   - name: rngd
-    image: linuxkit/rngd:aaa9a63cbc9c04421b160b85aef4df5fa5d0f5f0
+    image: linuxkit/rngd:v0.6
     cgroupsPath: systemreserved/rngd
   - name: ntpd
-    image: linuxkit/openntpd:413ee972bc71a66030c50bc8daf7385e5c8ea269
+    image: linuxkit/openntpd:v0.6
     cgroupsPath: systemreserved/ntpd
   - name: sshd
-    image: linuxkit/sshd:5544de2376475f6685e12bdc10bfe49f4695873a
+    image: linuxkit/sshd:v0.6
     cgroupsPath: systemreserved/sshd
   - name: kubelet
     image: linuxkit/kubelet:bcff9a97b3ecaf204ca7ee122f5a071a3dc97d4c
