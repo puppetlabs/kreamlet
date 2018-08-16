@@ -1,6 +1,6 @@
 kernel:
   image: linuxkit/kernel:4.14.62
-  cmdline: "console=tty0 console=ttyS0"
+  cmdline: "console=tty0 console=ttyS0 console=ttyAMA0 console=ttysclp0"
 init:
   - linuxkit/init:v0.6
   - linuxkit/runc:v0.6
@@ -12,6 +12,10 @@ onboot:
     binds:
      - /etc/sysctl.d/01-kubernetes.conf:/etc/sysctl.d/01-kubernetes.conf
     readonly: false
+  - name: rngd
+    image: linuxkit/rngd:v0.6
+    command: ["/sbin/rngd", "-1"]    
+    cgroupsPath: systemreserved/rngd  
   - name: sysfs
     image: linuxkit/sysfs:v0.6
   - name: dhcpcd
