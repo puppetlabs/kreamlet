@@ -28,6 +28,7 @@ From the same build we can create any cloud image. From the start of this projec
 
 ## Limitations 
 At the moment you will have to manually expose services through `kubectl port-forward` This is going to be added to the beta release. 
+
 It only supports Kubernetes v1.10.3.
 
 
