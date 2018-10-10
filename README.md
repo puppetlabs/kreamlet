@@ -15,7 +15,7 @@ golang 1.10.2
 ## Getting it up and running 
 
 
-Firstly you need to get the code with `go get github.com/puppetlabs/kreamlet`
+Firstly you need to get the code with `go get -u github.com/puppetlabs/kreamlet`
 
 Then just run `./setup.sh`
 
@@ -27,7 +27,8 @@ This is the proof of concept to prove we can use Linuxkit as the mechanism to bu
 From the same build we can create any cloud image. From the start of this project we will use cri-containerd instead if Docker. This will greatly reduce our image size.
 
 ## Limitations 
-At the moment you will have to manually expose services through `kubectl port-forward` This is going to be added to the beta release
+At the moment you will have to manually expose services through `kubectl port-forward` This is going to be added to the beta release. 
+It only supports Kubernetes v1.10.3.
 
 
 ## Road Map (For this repo)
