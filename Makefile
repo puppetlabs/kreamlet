@@ -33,6 +33,10 @@ shell:
 	docker build -t ${DOCKER_IMAGE}-shell -f hack/Dockerfile.shell .
 	docker run -it --rm ${DOCKER_IMAGE}-shell /bin/bash
 
+bootstrap-shell-mac:
+	vagrant up
+	vagrant ssh
+
 bootstrap-dev:
 	cd $$PWD/bootstrap && make image
 	if [ -d $$PWD/image/kube-master-state ]; then rm -rf $$PWD/image/kube-master-state; fi 
@@ -51,3 +55,4 @@ clean:
 	docker rmi ${DOCKER_IMAGE} || true
 	rm -rf  ${ROOT_DIR}/bin/*
 	cd $$PWD/image && make clean
+	vagrant destroy -f
